@@ -1,4 +1,6 @@
 import argparse
+import os
+import sys
 
 from dotenv import load_dotenv
 
@@ -7,8 +9,22 @@ from ingestion import get_chunks, get_embeddings, get_retriever, load_docs, setu
 
 load_dotenv()
 
+REQUIRED_ENV_VARS = ["GROQ_API_KEY", "TAVILY_API_KEY", "PINECONE_API_KEY"]
+
+
+def check_required_env_vars():
+    missing = [name for name in REQUIRED_ENV_VARS if not os.environ.get(name)]
+
+    if missing:
+        sys.exit(
+            f"Missing required environment variable(s): {', '.join(missing)}. "
+            "Set them in .env (see .env.example)."
+        )
+
 
 def main(question: str, reingest: bool = False):
+    check_required_env_vars()
+
     embeddings = get_embeddings()
 
     if reingest:
