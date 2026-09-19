@@ -5,13 +5,16 @@ from langgraph.graph import END, START, StateGraph
 from llm import get_llm, get_tavily_search_tool, with_retry
 from state import AgentState, EvidenceGrade, RouteDecision
 
+
+def _structured_llm(schema):
+    return with_retry(get_llm().with_structured_output(schema, method="json_mode"))
+
+
 # Nodes
 def route_question(state: AgentState):
     question = state["question"]
 
-    router_llm = with_retry(
-        get_llm().with_structured_output(RouteDecision, method="json_mode")
-    )
+    router_llm = _structured_llm(RouteDecision)
 
     decision = router_llm.invoke(f"""
 You are a router for an Agentic RAG assistant.
@@ -49,28 +52,19 @@ def route_after_router(state: AgentState) -> Literal["retrieve_kb", "direct_answ
     return "direct_answer"
 
 
-def grade_kb_evidence(state: AgentState):
-    question = state["question"]
+def _grade_evidence(question: str, evidence: str, evidence_label: str) -> EvidenceGrade:
+    grader_llm = _structured_llm(EvidenceGrade)
 
-    kb_grader_llm = with_retry(
-        get_llm().with_structured_output(EvidenceGrade, method="json_mode")
-    )
-
-    context = "\n\n".join(
-        f"Source: {doc.metadata.get('source')}\n{doc.page_content}"
-        for doc in state["kb_docs"]
-    )
-
-    grade = kb_grader_llm.invoke(f"""
+    return grader_llm.invoke(f"""
 You are an evidence grader.
 
 Question:
 {question}
 
-Private KB evidence:
-{context}
+{evidence_label}:
+{evidence}
 
-Can this private KB evidence answer the question?
+Can this evidence answer the question?
 Return "good" if it can answer.
 Return "weak" if it cannot answer or is incomplete.
 
@@ -78,6 +72,17 @@ Return your response as valid JSON.
 Example:
 {{"grade": "good"}}
 """)
+
+
+def grade_kb_evidence(state: AgentState):
+    question = state["question"]
+
+    context = "\n\n".join(
+        f"Source: {doc.metadata.get('source')}\n{doc.page_content}"
+        for doc in state["kb_docs"]
+    )
+
+    grade = _grade_evidence(question, context, "Private KB evidence")
 
     print("[KB Grader]", grade.grade)
 
@@ -130,27 +135,7 @@ def grade_web_evidence(state: AgentState):
     question = state["question"]
     web_results = state["web_results"]
 
-    web_grader_llm = with_retry(
-        get_llm().with_structured_output(EvidenceGrade, method="json_mode")
-    )
-
-    grade = web_grader_llm.invoke(f"""
-You are an evidence grader.
-
-Question:
-{question}
-
-Web search evidence:
-{web_results}
-
-Can this web evidence answer the question?
-Return "good" if it can answer.
-Return "weak" if it cannot answer or is incomplete.
-
-Return your response as valid JSON.
-Example:
-{{"grade": "good"}}
-""")
+    grade = _grade_evidence(question, web_results, "Web search evidence")
 
     print("[Web Grader]", grade.grade)
 
