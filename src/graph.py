@@ -2,14 +2,16 @@ from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
 
-from llm import get_llm, get_tavily_search_tool
+from llm import get_llm, get_tavily_search_tool, with_retry
 from state import AgentState, EvidenceGrade, RouteDecision
 
 # Nodes
 def route_question(state: AgentState):
     question = state["question"]
 
-    router_llm = get_llm().with_structured_output(RouteDecision, method="json_mode")
+    router_llm = with_retry(
+        get_llm().with_structured_output(RouteDecision, method="json_mode")
+    )
 
     decision = router_llm.invoke(f"""
 You are a router for an Agentic RAG assistant.
@@ -50,7 +52,9 @@ def route_after_router(state: AgentState) -> Literal["retrieve_kb", "direct_answ
 def grade_kb_evidence(state: AgentState):
     question = state["question"]
 
-    kb_grader_llm = get_llm().with_structured_output(EvidenceGrade, method="json_mode")
+    kb_grader_llm = with_retry(
+        get_llm().with_structured_output(EvidenceGrade, method="json_mode")
+    )
 
     context = "\n\n".join(
         f"Source: {doc.metadata.get('source')}\n{doc.page_content}"
@@ -126,7 +130,9 @@ def grade_web_evidence(state: AgentState):
     question = state["question"]
     web_results = state["web_results"]
 
-    web_grader_llm = get_llm().with_structured_output(EvidenceGrade, method="json_mode")
+    web_grader_llm = with_retry(
+        get_llm().with_structured_output(EvidenceGrade, method="json_mode")
+    )
 
     grade = web_grader_llm.invoke(f"""
 You are an evidence grader.
@@ -170,7 +176,7 @@ def rewrite_query(state: AgentState):
     question = state["question"]
     retry_count = state["retry_count"] + 1
 
-    rewritten = get_llm().invoke(f"""
+    rewritten = with_retry(get_llm()).invoke(f"""
 Rewrite the question for better retrieval and web search.
 
 Rules:
@@ -199,7 +205,7 @@ def generate_from_kb(state: AgentState):
         for doc in state["kb_docs"]
     )
 
-    answer = get_llm().invoke(f"""
+    answer = with_retry(get_llm()).invoke(f"""
 You are a technical instructor.
 
 Answer using ONLY the private KB context.
@@ -227,7 +233,7 @@ def generate_from_web(state: AgentState):
     question = state["question"]
     web_context = state["web_results"]
 
-    answer = get_llm().invoke(f"""
+    answer = with_retry(get_llm()).invoke(f"""
 You are a technical instructor.
 
 The private KB was insufficient, so web search was used.
@@ -257,7 +263,7 @@ Web search context:
 def direct_answer(state: AgentState):
     question = state["question"]
 
-    answer = get_llm().invoke(f"""
+    answer = with_retry(get_llm()).invoke(f"""
 Respond briefly and naturally.
 
 Message:
@@ -366,7 +372,15 @@ def ask_agent(app, question: str):
         "retry_count": 0,
     }
 
-    result = app.invoke(initial_state)
+    try:
+        result = app.invoke(initial_state)
+    except Exception as exc:
+        print(f"[Agent Error] {exc}")
+        result = {
+            **initial_state,
+            "answer": f"Sorry, something went wrong while answering this: {exc}",
+            "source_used": "error",
+        }
 
     print("\n" + "=" * 90)
     print("QUESTION:")
