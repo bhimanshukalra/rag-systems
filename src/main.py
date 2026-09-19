@@ -1,3 +1,4 @@
+import hashlib
 from typing import Literal
 
 from langchain_community.document_loaders import WebBaseLoader
@@ -64,6 +65,13 @@ def get_embeddings() -> HuggingFaceEmbeddings:
     return embeddings
 
 
+def get_chunk_id(chunk: Document) -> str:
+    # Deterministic from content + position, so re-ingesting the same
+    # source upserts the same vectors instead of duplicating them.
+    key = f"{chunk.metadata.get('source', '')}::{chunk.metadata.get('start_index', '')}::{chunk.page_content}"
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+
 def setup_db(chunks: list[Document], embeddings: HuggingFaceEmbeddings):
 
     # Connect to Pinecone
@@ -90,11 +98,14 @@ def setup_db(chunks: list[Document], embeddings: HuggingFaceEmbeddings):
     print("Pinecone index ready:", INDEX_NAME)
 
     # Upload the document chunks and create the LangChain vector store.
+    # Stable ids make this an upsert: re-running ingestion overwrites
+    # existing vectors instead of adding duplicates.
     vectorstore = PineconeVectorStore.from_documents(
         documents=chunks,
         embedding=embeddings,
         index_name=INDEX_NAME,
         namespace=NAMESPACE,
+        ids=[get_chunk_id(chunk) for chunk in chunks],
     )
 
     retriever = vectorstore.as_retriever(
@@ -154,11 +165,7 @@ def get_tavily_search_tool():
     return search_tool
 
 
-raw_docs = load_docs()
-chunks = get_chunks(raw_docs)
-embeddings = get_embeddings()
-setup_db(chunks, embeddings)
-retriever = get_retriever(embeddings)
+retriever = None
 
 
 # Nodes
@@ -534,10 +541,25 @@ def ask_agent(question: str):
     return result
 
 
-ask_agent("In Agentic RAG, what happens when retrieved documents are not relevant?")
-ask_agent("What is Tavily Search and why is it useful for AI agents and RAG workflows?")
-ask_agent("Hello, how are you?")
-ask_agent(
-    "What is the current LangChain Tavily package used for Python web search integration?"
-)
-ask_agent("How to build a custom RAG agent with LangGraph?")
+def main():
+    global retriever
+
+    raw_docs = load_docs()
+    chunks = get_chunks(raw_docs)
+    embeddings = get_embeddings()
+    setup_db(chunks, embeddings)
+    retriever = get_retriever(embeddings)
+
+    ask_agent("In Agentic RAG, what happens when retrieved documents are not relevant?")
+    ask_agent(
+        "What is Tavily Search and why is it useful for AI agents and RAG workflows?"
+    )
+    ask_agent("Hello, how are you?")
+    ask_agent(
+        "What is the current LangChain Tavily package used for Python web search integration?"
+    )
+    ask_agent("How to build a custom RAG agent with LangGraph?")
+
+
+if __name__ == "__main__":
+    main()
