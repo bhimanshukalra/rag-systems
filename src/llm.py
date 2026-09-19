@@ -1,7 +1,10 @@
+import logging
 from functools import lru_cache
 
 from langchain_groq import ChatGroq
 from langchain_tavily import TavilySearch
+
+logger = logging.getLogger(__name__)
 
 RETRY_ATTEMPTS = 3
 
@@ -23,7 +26,7 @@ def get_tavily_search_tool():
         include_raw_content=False,
     )
 
-    print("Tavily search tool ready.")
+    logger.info("Tavily search tool ready.")
 
     return search_tool.with_retry(stop_after_attempt=RETRY_ATTEMPTS)
 

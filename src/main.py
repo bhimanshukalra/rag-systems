@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import sys
 
@@ -8,6 +9,15 @@ from graph import ask_agent, build_graph
 from ingestion import get_chunks, get_embeddings, get_retriever, load_docs, setup_db
 
 load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
+# Quiet chatty third-party HTTP client logging so it doesn't drown out
+# our own progress messages at the default INFO level.
+for _noisy_logger in ("httpx", "httpcore", "urllib3"):
+    logging.getLogger(_noisy_logger).setLevel(logging.WARNING)
 
 REQUIRED_ENV_VARS = ["GROQ_API_KEY", "TAVILY_API_KEY", "PINECONE_API_KEY"]
 

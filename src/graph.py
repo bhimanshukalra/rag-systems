@@ -1,9 +1,12 @@
+import logging
 from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
 
 from llm import get_llm, get_tavily_search_tool, with_retry
 from state import AgentState, EvidenceGrade, RouteDecision
+
+logger = logging.getLogger(__name__)
 
 
 def _structured_llm(schema):
@@ -38,7 +41,7 @@ Example:
 {{"route": "kb"}}
 """)
 
-    print("[Router]", decision.route)
+    logger.info("Router decision: %s", decision.route)
 
     return {
         "current_query": question,
@@ -84,7 +87,7 @@ def grade_kb_evidence(state: AgentState):
 
     grade = _grade_evidence(question, context, "Private KB evidence")
 
-    print("[KB Grader]", grade.grade)
+    logger.info("KB grader: %s", grade.grade)
 
     return {"kb_grade": grade.grade}
 
@@ -100,7 +103,7 @@ def decide_after_kb_grade(
 def search_web(state: AgentState):
     query = state["current_query"]
 
-    print(f"[Tavily Search] Query: {query}")
+    logger.info("Tavily search query: %s", query)
 
     result = get_tavily_search_tool().invoke({"query": query})
 
@@ -123,7 +126,7 @@ def search_web(state: AgentState):
     else:
         web_text = str(result)
 
-    print("[Tavily Search] Result characters:", len(web_text))
+    logger.info("Tavily search result characters: %d", len(web_text))
 
     return {
         "web_results": web_text,
@@ -137,7 +140,7 @@ def grade_web_evidence(state: AgentState):
 
     grade = _grade_evidence(question, web_results, "Web search evidence")
 
-    print("[Web Grader]", grade.grade)
+    logger.info("Web grader: %s", grade.grade)
 
     return {"web_grade": grade.grade}
 
@@ -174,7 +177,7 @@ Original question:
 {question}
 """).content.strip()
 
-    print("[Rewriter]", rewritten)
+    logger.info("Rewritten query: %s", rewritten)
 
     return {
         "current_query": rewritten,
@@ -279,8 +282,8 @@ def build_graph(retriever):
         query = state["current_query"]
         docs = retriever.invoke(query)
 
-        print(f"[KB Retriever] Query: {query}")
-        print(f"[KB Retriever] Retrieved: {len(docs)} chunks")
+        logger.info("KB retriever query: %s", query)
+        logger.info("KB retriever retrieved: %d chunks", len(docs))
 
         return {"kb_docs": docs}
 
@@ -339,7 +342,7 @@ def build_graph(retriever):
 
     app = workflow.compile()
 
-    print("Industry-style Agentic RAG graph compiled.")
+    logger.info("Industry-style Agentic RAG graph compiled.")
 
     return app
 
@@ -360,7 +363,7 @@ def ask_agent(app, question: str):
     try:
         result = app.invoke(initial_state)
     except Exception as exc:
-        print(f"[Agent Error] {exc}")
+        logger.error("Agent error: %s", exc)
         result = {
             **initial_state,
             "answer": f"Sorry, something went wrong while answering this: {exc}",

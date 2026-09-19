@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import time
 
 from langchain_community.document_loaders import WebBaseLoader
@@ -7,6 +8,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pinecone import Pinecone, ServerlessSpec
+
+logger = logging.getLogger(__name__)
 
 INDEX_NAME = "industry-agentic-rag-kb"
 NAMESPACE = "langgraph-agentic-rag"
@@ -24,7 +27,7 @@ def load_docs():
 
     raw_docs = loader.load()
 
-    print("Loaded documents:", len(raw_docs))
+    logger.info("Loaded documents: %d", len(raw_docs))
 
     return raw_docs
 
@@ -39,7 +42,7 @@ def get_chunks(raw_docs):
 
     chunks = splitter.split_documents(raw_docs)
 
-    print("Total chunks:", len(chunks))
+    logger.info("Total chunks: %d", len(chunks))
 
     return chunks
 
@@ -52,7 +55,7 @@ def get_embeddings() -> HuggingFaceEmbeddings:
     )
 
     sample_vector = embeddings.embed_query("What is Agentic RAG?")
-    print("Embedding dimensions:", len(sample_vector))
+    logger.info("Embedding dimensions: %d", len(sample_vector))
 
     return embeddings
 
@@ -93,7 +96,7 @@ def setup_db(chunks: list[Document], embeddings: HuggingFaceEmbeddings):
             )
         time.sleep(1)
 
-    print("Pinecone index ready:", INDEX_NAME)
+    logger.info("Pinecone index ready: %s", INDEX_NAME)
 
     # Upload the document chunks and create the LangChain vector store.
     # Stable ids make this an upsert: re-running ingestion overwrites
@@ -113,7 +116,7 @@ def setup_db(chunks: list[Document], embeddings: HuggingFaceEmbeddings):
         }
     )
 
-    print("Pinecone vector database and retriever are ready.")
+    logger.info("Pinecone vector database and retriever are ready.")
 
     return retriever
 
