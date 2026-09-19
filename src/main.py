@@ -20,17 +20,16 @@ def main(reingest: bool = False):
 
     app = build_graph(retriever)
 
-    ask_agent(app, "In Agentic RAG, what happens when retrieved documents are not relevant?")
-    ask_agent(
-        app,
+    demo_questions = [
+        "In Agentic RAG, what happens when retrieved documents are not relevant?",
         "What is Tavily Search and why is it useful for AI agents and RAG workflows?",
-    )
-    ask_agent(app, "Hello, how are you?")
-    ask_agent(
-        app,
+        "Hello, how are you?",
         "What is the current LangChain Tavily package used for Python web search integration?",
-    )
-    ask_agent(app, "How to build a custom RAG agent with LangGraph?")
+        "How to build a custom RAG agent with LangGraph?",
+    ]
+
+    for question in demo_questions:
+        ask_agent(app, question)
 
 
 if __name__ == "__main__":
