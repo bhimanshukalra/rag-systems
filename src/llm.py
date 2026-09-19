@@ -1,9 +1,12 @@
+from functools import lru_cache
+
 from langchain_groq import ChatGroq
 from langchain_tavily import TavilySearch
 
 RETRY_ATTEMPTS = 3
 
 
+@lru_cache(maxsize=1)
 def get_llm():
     return ChatGroq(
         model="openai/gpt-oss-20b",
@@ -11,6 +14,7 @@ def get_llm():
     )
 
 
+@lru_cache(maxsize=1)
 def get_tavily_search_tool():
     search_tool = TavilySearch(
         max_results=5,
