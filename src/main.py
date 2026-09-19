@@ -1,5 +1,7 @@
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.documents import Document
+from langchain_groq import ChatGroq
+from langchain_tavily import TavilySearch
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from pinecone import Pinecone, ServerlessSpec
@@ -123,6 +125,28 @@ def get_retriever(embeddings: HuggingFaceEmbeddings):
     )
 
     return retriever
+
+
+def get_llm():
+    llm = ChatGroq(
+        model="openai/gpt-oss-20b",
+        temperature=0,
+    )
+
+    return llm
+
+
+def get_tavily_search_tool():
+    search_tool = TavilySearch(
+        max_results=5,
+        topic="general",
+        include_answer=True,
+        include_raw_content=False,
+    )
+
+    print("Tavily search tool ready.")
+
+    return search_tool
 
 
 def main():
