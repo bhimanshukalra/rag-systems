@@ -11,6 +11,7 @@ from pinecone import Pinecone, ServerlessSpec
 INDEX_NAME = "industry-agentic-rag-kb"
 NAMESPACE = "langgraph-agentic-rag"
 SOURCE_URL = "https://docs.langchain.com/oss/python/langgraph/agentic-rag"
+INDEX_READY_TIMEOUT_SECONDS = 60
 
 
 def load_docs():
@@ -83,7 +84,13 @@ def setup_db(chunks: list[Document], embeddings: HuggingFaceEmbeddings):
         )
 
     # Wait until Pinecone reports the new index as ready.
+    deadline = time.monotonic() + INDEX_READY_TIMEOUT_SECONDS
     while not pinecone.describe_index(INDEX_NAME).status["ready"]:
+        if time.monotonic() > deadline:
+            raise TimeoutError(
+                f"Pinecone index {INDEX_NAME!r} did not become ready within "
+                f"{INDEX_READY_TIMEOUT_SECONDS} seconds."
+            )
         time.sleep(1)
 
     print("Pinecone index ready:", INDEX_NAME)
