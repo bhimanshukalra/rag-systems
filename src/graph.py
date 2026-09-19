@@ -5,14 +5,6 @@ from langgraph.graph import END, START, StateGraph
 from llm import get_llm, get_tavily_search_tool
 from state import AgentState, EvidenceGrade, RouteDecision
 
-retriever = None
-
-
-def set_retriever(new_retriever) -> None:
-    global retriever
-    retriever = new_retriever
-
-
 # Nodes
 def route_question(state: AgentState):
     question = state["question"]
@@ -53,16 +45,6 @@ def route_after_router(state: AgentState) -> Literal["retrieve_kb", "direct_answ
     if state["source_used"] == "kb":
         return "retrieve_kb"
     return "direct_answer"
-
-
-def retrieve_kb(state: AgentState):
-    query = state["current_query"]
-    docs = retriever.invoke(query)
-
-    print(f"[KB Retriever] Query: {query}")
-    print(f"[KB Retriever] Retrieved: {len(docs)} chunks")
-
-    return {"kb_docs": docs}
 
 
 def grade_kb_evidence(state: AgentState):
@@ -301,65 +283,77 @@ def answer_insufficient(state: AgentState):
     }
 
 
-workflow = StateGraph(AgentState)
+def build_graph(retriever):
+    def retrieve_kb(state: AgentState):
+        query = state["current_query"]
+        docs = retriever.invoke(query)
 
-workflow.add_node("route_question", route_question)
-workflow.add_node("retrieve_kb", retrieve_kb)
-workflow.add_node("grade_kb_evidence", grade_kb_evidence)
-workflow.add_node("search_web", search_web)
-workflow.add_node("grade_web_evidence", grade_web_evidence)
-workflow.add_node("rewrite_query", rewrite_query)
-workflow.add_node("generate_from_kb", generate_from_kb)
-workflow.add_node("generate_from_web", generate_from_web)
-workflow.add_node("direct_answer", direct_answer)
-workflow.add_node("answer_insufficient", answer_insufficient)
+        print(f"[KB Retriever] Query: {query}")
+        print(f"[KB Retriever] Retrieved: {len(docs)} chunks")
 
-workflow.add_edge(START, "route_question")
+        return {"kb_docs": docs}
 
-workflow.add_conditional_edges(
-    "route_question",
-    route_after_router,
-    {
-        "retrieve_kb": "retrieve_kb",
-        "direct_answer": "direct_answer",
-    },
-)
+    workflow = StateGraph(AgentState)
 
-workflow.add_edge("retrieve_kb", "grade_kb_evidence")
+    workflow.add_node("route_question", route_question)
+    workflow.add_node("retrieve_kb", retrieve_kb)
+    workflow.add_node("grade_kb_evidence", grade_kb_evidence)
+    workflow.add_node("search_web", search_web)
+    workflow.add_node("grade_web_evidence", grade_web_evidence)
+    workflow.add_node("rewrite_query", rewrite_query)
+    workflow.add_node("generate_from_kb", generate_from_kb)
+    workflow.add_node("generate_from_web", generate_from_web)
+    workflow.add_node("direct_answer", direct_answer)
+    workflow.add_node("answer_insufficient", answer_insufficient)
 
-workflow.add_conditional_edges(
-    "grade_kb_evidence",
-    decide_after_kb_grade,
-    {
-        "generate_from_kb": "generate_from_kb",
-        "search_web": "search_web",
-    },
-)
+    workflow.add_edge(START, "route_question")
 
-workflow.add_edge("search_web", "grade_web_evidence")
+    workflow.add_conditional_edges(
+        "route_question",
+        route_after_router,
+        {
+            "retrieve_kb": "retrieve_kb",
+            "direct_answer": "direct_answer",
+        },
+    )
 
-workflow.add_conditional_edges(
-    "grade_web_evidence",
-    decide_after_web_grade,
-    {
-        "generate_from_web": "generate_from_web",
-        "rewrite_query": "rewrite_query",
-        "answer_insufficient": "answer_insufficient",
-    },
-)
+    workflow.add_edge("retrieve_kb", "grade_kb_evidence")
 
-workflow.add_edge("rewrite_query", "retrieve_kb")
-workflow.add_edge("generate_from_kb", END)
-workflow.add_edge("generate_from_web", END)
-workflow.add_edge("direct_answer", END)
-workflow.add_edge("answer_insufficient", END)
+    workflow.add_conditional_edges(
+        "grade_kb_evidence",
+        decide_after_kb_grade,
+        {
+            "generate_from_kb": "generate_from_kb",
+            "search_web": "search_web",
+        },
+    )
 
-app = workflow.compile()
+    workflow.add_edge("search_web", "grade_web_evidence")
 
-print("Industry-style Agentic RAG graph compiled.")
+    workflow.add_conditional_edges(
+        "grade_web_evidence",
+        decide_after_web_grade,
+        {
+            "generate_from_web": "generate_from_web",
+            "rewrite_query": "rewrite_query",
+            "answer_insufficient": "answer_insufficient",
+        },
+    )
+
+    workflow.add_edge("rewrite_query", "retrieve_kb")
+    workflow.add_edge("generate_from_kb", END)
+    workflow.add_edge("generate_from_web", END)
+    workflow.add_edge("direct_answer", END)
+    workflow.add_edge("answer_insufficient", END)
+
+    app = workflow.compile()
+
+    print("Industry-style Agentic RAG graph compiled.")
+
+    return app
 
 
-def ask_agent(question: str):
+def ask_agent(app, question: str):
     initial_state: AgentState = {
         "question": question,
         "current_query": question,

@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from graph import ask_agent, set_retriever
+from graph import ask_agent, build_graph
 from ingestion import get_chunks, get_embeddings, get_retriever, load_docs, setup_db
 
 load_dotenv()
@@ -11,17 +11,21 @@ def main():
     chunks = get_chunks(raw_docs)
     embeddings = get_embeddings()
     setup_db(chunks, embeddings)
-    set_retriever(get_retriever(embeddings))
+    retriever = get_retriever(embeddings)
 
-    ask_agent("In Agentic RAG, what happens when retrieved documents are not relevant?")
+    app = build_graph(retriever)
+
+    ask_agent(app, "In Agentic RAG, what happens when retrieved documents are not relevant?")
     ask_agent(
-        "What is Tavily Search and why is it useful for AI agents and RAG workflows?"
+        app,
+        "What is Tavily Search and why is it useful for AI agents and RAG workflows?",
     )
-    ask_agent("Hello, how are you?")
+    ask_agent(app, "Hello, how are you?")
     ask_agent(
-        "What is the current LangChain Tavily package used for Python web search integration?"
+        app,
+        "What is the current LangChain Tavily package used for Python web search integration?",
     )
-    ask_agent("How to build a custom RAG agent with LangGraph?")
+    ask_agent(app, "How to build a custom RAG agent with LangGraph?")
 
 
 if __name__ == "__main__":
