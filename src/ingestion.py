@@ -108,6 +108,8 @@ def setup_db(chunks: list[Document], embeddings: HuggingFaceEmbeddings):
 
     print("Pinecone vector database and retriever are ready.")
 
+    return retriever
+
 
 def get_retriever(embeddings: HuggingFaceEmbeddings):
     # Connect to Pinecone

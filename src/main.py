@@ -14,9 +14,9 @@ def main(reingest: bool = False):
     if reingest:
         raw_docs = load_docs()
         chunks = get_chunks(raw_docs)
-        setup_db(chunks, embeddings)
-
-    retriever = get_retriever(embeddings)
+        retriever = setup_db(chunks, embeddings)
+    else:
+        retriever = get_retriever(embeddings)
 
     app = build_graph(retriever)
 
