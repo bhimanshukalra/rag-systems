@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import os
 import time
 
 from langchain_community.document_loaders import WebBaseLoader
@@ -11,9 +12,13 @@ from pinecone import Pinecone, ServerlessSpec
 
 logger = logging.getLogger(__name__)
 
-INDEX_NAME = "industry-agentic-rag-kb"
-NAMESPACE = "langgraph-agentic-rag"
-SOURCE_URL = "https://docs.langchain.com/oss/python/langgraph/agentic-rag"
+# Overridable via env vars for ingesting a different source/index without
+# editing code; defaults match the original single-source demo setup.
+INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "industry-agentic-rag-kb")
+NAMESPACE = os.environ.get("PINECONE_NAMESPACE", "langgraph-agentic-rag")
+SOURCE_URL = os.environ.get(
+    "INGEST_SOURCE_URL", "https://docs.langchain.com/oss/python/langgraph/agentic-rag"
+)
 INDEX_READY_TIMEOUT_SECONDS = 60
 
 
