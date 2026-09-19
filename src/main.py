@@ -1,3 +1,5 @@
+import argparse
+
 from dotenv import load_dotenv
 
 from graph import ask_agent, build_graph
@@ -6,11 +8,14 @@ from ingestion import get_chunks, get_embeddings, get_retriever, load_docs, setu
 load_dotenv()
 
 
-def main():
-    raw_docs = load_docs()
-    chunks = get_chunks(raw_docs)
+def main(reingest: bool = False):
     embeddings = get_embeddings()
-    setup_db(chunks, embeddings)
+
+    if reingest:
+        raw_docs = load_docs()
+        chunks = get_chunks(raw_docs)
+        setup_db(chunks, embeddings)
+
     retriever = get_retriever(embeddings)
 
     app = build_graph(retriever)
@@ -29,4 +34,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--reingest",
+        action="store_true",
+        help="Re-scrape, chunk, embed, and upload the source before querying.",
+    )
+    args = parser.parse_args()
+    main(reingest=args.reingest)
