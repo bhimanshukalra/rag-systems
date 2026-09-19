@@ -1,0 +1,3 @@
+# Each project keeps its own .gitignore for project-specific rules
+# (venvs, caches, secrets). This one covers repo-wide stragglers.
+.DS_Store
