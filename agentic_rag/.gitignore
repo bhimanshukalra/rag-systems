@@ -13,4 +13,7 @@ wheels/
 
 .env
 
+# Local SQLite registry
+data/
+
 planning
