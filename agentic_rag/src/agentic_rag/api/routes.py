@@ -18,6 +18,7 @@ from agentic_rag.indexing.vector_store import get_vector_store
 from agentic_rag.ingestion.pipeline import ingest_source
 from agentic_rag.persistence import registry
 from agentic_rag.persistence.registry import create_engine_for
+from agentic_rag.retrieval.pipeline import retrieve
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,9 @@ def get_source_status(
 
 @router.post("/query", response_model=QueryResponse)
 def query(
-    payload: QueryRequest, settings: Settings = Depends(get_settings)
+    payload: QueryRequest,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> QueryResponse:
     embeddings = get_embeddings(settings.embedding_model)
     vector_store = get_vector_store(
@@ -82,6 +85,8 @@ def query(
         api_key=settings.pinecone_api_key,
         index_name=settings.pinecone_index_name,
     )
-    documents = vector_store.similarity_search(payload.question, k=settings.retrieval_k)
+    documents = retrieve(
+        payload.question, session=session, vector_store=vector_store, settings=settings
+    )
     result = generate_answer(payload.question, documents, model=settings.llm_model)
     return QueryResponse(answer=result.answer, sources=result.sources)
