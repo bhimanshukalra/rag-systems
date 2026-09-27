@@ -1,0 +1,342 @@
+{
+  "summary": {
+    "label": "phase1_hybrid",
+    "retriever": "hybrid",
+    "timestamp": "2026-09-27T19:00:59Z",
+    "num_questions": 15,
+    "raw_chunk_pool": 40,
+    "recall_at_k": {
+      "1": 0.9333333333333333,
+      "4": 1.0,
+      "10": 1.0
+    },
+    "mrr": 0.9666666666666667
+  },
+  "per_question": [
+    {
+      "question": "How many paid vacation days do full-time employees receive per year, and how many can roll over?",
+      "category": "semantic",
+      "expected_sources": [
+        "tests/fixtures/sample.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample.md",
+        "tests/fixtures/sample_security.md",
+        "https://arxiv.org/pdf/1810.04805",
+        "https://arxiv.org/pdf/1512.03385",
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "tests/fixtures/sample_products.md",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/introduction.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "How do you start the Python interpreter in interactive mode?",
+      "category": "semantic",
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/introduction.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://arxiv.org/pdf/1512.03385"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What is the multi-head attention mechanism introduced in the original Transformer paper?",
+      "category": "discrimination",
+      "expected_sources": [
+        "https://arxiv.org/pdf/1706.03762"
+      ],
+      "retrieved_sources": [
+        "https://arxiv.org/pdf/1706.03762",
+        "https://arxiv.org/pdf/1810.04805",
+        "https://arxiv.org/pdf/1512.03385"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What is the peak power draw and warranty length of SKU-4471-B?",
+      "category": "exact_term",
+      "expected_sources": [
+        "tests/fixtures/sample_products.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample_products.md",
+        "tests/fixtures/sample_security.md",
+        "https://arxiv.org/pdf/1706.03762",
+        "tests/fixtures/sample.md",
+        "https://arxiv.org/pdf/1810.04805",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://arxiv.org/pdf/1512.03385",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/errors.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "How often must employee passwords be rotated under the IT security policy?",
+      "category": "exact_term",
+      "expected_sources": [
+        "tests/fixtures/sample_security.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample_security.md",
+        "tests/fixtures/sample.md",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://arxiv.org/pdf/1810.04805",
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://arxiv.org/pdf/1512.03385",
+        "tests/fixtures/sample_products.md"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What does Python's range() function do inside a for loop?",
+      "category": "semantic",
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/controlflow.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/datastructures.html"
+      ],
+      "hit_rank": 2,
+      "reciprocal_rank": 0.5,
+      "recalls": {
+        "1": 0,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "How do you add an item to a Python list?",
+      "category": "semantic",
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/datastructures.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/controlflow.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "How do you import a specific function from a Python module?",
+      "category": "semantic",
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/modules.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://docs.python.org/3/tutorial/introduction.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What does Python's try/except block do?",
+      "category": "semantic",
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/errors.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/datastructures.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What pre-training objective does BERT use, according to the BERT paper?",
+      "category": "discrimination",
+      "expected_sources": [
+        "https://arxiv.org/pdf/1810.04805"
+      ],
+      "retrieved_sources": [
+        "https://arxiv.org/pdf/1810.04805"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What problem do residual connections solve in ResNet?",
+      "category": "discrimination",
+      "expected_sources": [
+        "https://arxiv.org/pdf/1512.03385"
+      ],
+      "retrieved_sources": [
+        "https://arxiv.org/pdf/1512.03385",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://arxiv.org/pdf/1706.03762"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What is SKU-2205-A and how much does it retail for?",
+      "category": "exact_term",
+      "expected_sources": [
+        "tests/fixtures/sample_products.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample_products.md",
+        "tests/fixtures/sample.md",
+        "https://arxiv.org/pdf/1810.04805",
+        "tests/fixtures/sample_security.md",
+        "https://arxiv.org/pdf/1512.03385",
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/datastructures.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "According to the security policy, how quickly must a Severity 1 incident be escalated to the CISO?",
+      "category": "exact_term",
+      "expected_sources": [
+        "tests/fixtures/sample_security.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample_security.md",
+        "tests/fixtures/sample.md",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://arxiv.org/pdf/1512.03385",
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://arxiv.org/pdf/1810.04805",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://docs.python.org/3/tutorial/modules.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "Is the Transformer architecture in 'Attention Is All You Need' based on recurrence or convolution, or neither?",
+      "category": "discrimination",
+      "expected_sources": [
+        "https://arxiv.org/pdf/1706.03762"
+      ],
+      "retrieved_sources": [
+        "https://arxiv.org/pdf/1706.03762",
+        "https://arxiv.org/pdf/1810.04805",
+        "https://docs.python.org/3/tutorial/errors.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What dataset was primarily used to demonstrate ResNet's performance improvements?",
+      "category": "discrimination",
+      "expected_sources": [
+        "https://arxiv.org/pdf/1512.03385"
+      ],
+      "retrieved_sources": [
+        "https://arxiv.org/pdf/1512.03385",
+        "https://arxiv.org/pdf/1810.04805",
+        "https://arxiv.org/pdf/1706.03762"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    }
+  ]
+}

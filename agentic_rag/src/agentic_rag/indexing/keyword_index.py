@@ -7,6 +7,29 @@ from sqlmodel import Field, Session, SQLModel, select
 
 from agentic_rag.indexing.vector_store import get_chunk_id
 
+# Standard English stopwords, excluded from both indexing and querying.
+# Without this, common words in a natural-language question (e.g. "what",
+# "does", "for") dilute the rare, actually-discriminating terms -- "for"
+# in particular isn't reliably downweighted by IDF alone in a programming
+# tutorial corpus, where a real cluster of chunks is specifically about
+# "for" loops.
+STOPWORDS = frozenset(
+    {
+        "a", "an", "and", "are", "as", "at", "be", "by", "can", "did", "do",
+        "does", "doing", "don", "for", "from", "had", "has", "have", "having",
+        "he", "her", "here", "hers", "herself", "him", "himself", "his", "how",
+        "i", "if", "in", "into", "is", "it", "its", "itself", "just", "me",
+        "more", "most", "my", "myself", "no", "nor", "not", "now", "of", "off",
+        "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out",
+        "over", "own", "s", "same", "she", "should", "so", "some", "such", "t",
+        "than", "that", "the", "their", "theirs", "them", "themselves", "then",
+        "there", "these", "they", "this", "those", "through", "to", "too",
+        "under", "until", "up", "very", "was", "we", "were", "what", "when",
+        "where", "which", "while", "who", "whom", "why", "will", "with", "you",
+        "your", "yours", "yourself", "yourselves",
+    }
+)
+
 
 class KeywordChunk(SQLModel, table=True):
     """Persisted BM25 corpus: one row per chunk, keyed by the same chunk
@@ -20,7 +43,8 @@ class KeywordChunk(SQLModel, table=True):
 
 
 def _tokenize(text: str) -> list[str]:
-    return re.findall(r"\w+", text.lower())
+    tokens = re.findall(r"\w+", text.lower())
+    return [token for token in tokens if token not in STOPWORDS]
 
 
 def add_chunks(session: Session, chunks: list[Document]) -> None:

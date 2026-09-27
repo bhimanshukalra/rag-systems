@@ -13,9 +13,13 @@ import json
 import time
 from pathlib import Path
 
+from sqlmodel import Session
+
 from agentic_rag.config import get_settings
 from agentic_rag.indexing.embeddings import get_embeddings
 from agentic_rag.indexing.vector_store import get_vector_store
+from agentic_rag.persistence.registry import create_engine_for
+from agentic_rag.retrieval.hybrid import hybrid_retrieve
 
 EVAL_DIR = Path(__file__).parent
 GOLDEN_QA_PATH = EVAL_DIR / "golden_qa.jsonl"
@@ -55,7 +59,7 @@ def score_question(retrieved_sources: list[str], expected_sources: list[str]):
     return recalls, reciprocal_rank, hit_rank
 
 
-def run(label: str) -> dict:
+def run(label: str, retriever_name: str = "dense") -> dict:
     settings = get_settings()
     embeddings = get_embeddings(settings.embedding_model)
     vector_store = get_vector_store(
@@ -64,13 +68,29 @@ def run(label: str) -> dict:
         index_name=settings.pinecone_index_name,
     )
 
+    session = None
+    if retriever_name == "hybrid":
+        engine = create_engine_for(settings.database_path)
+        session = Session(engine)
+
+    def retrieve(query: str) -> list:
+        if retriever_name == "hybrid":
+            return hybrid_retrieve(
+                session,
+                query,
+                vector_store=vector_store,
+                k=RAW_CHUNK_POOL,
+                pool_size=RAW_CHUNK_POOL,
+            )
+        return vector_store.similarity_search(query, k=RAW_CHUNK_POOL)
+
     questions = load_golden_qa()
     per_question = []
     totals = dict.fromkeys(RECALL_KS, 0)
     mrr_sum = 0.0
 
     for item in questions:
-        documents = vector_store.similarity_search(item["question"], k=RAW_CHUNK_POOL)
+        documents = retrieve(item["question"])
         retrieved_sources = ranked_distinct_sources(documents)
         recalls, reciprocal_rank, hit_rank = score_question(
             retrieved_sources, item["expected_sources"]
@@ -92,9 +112,13 @@ def run(label: str) -> dict:
             }
         )
 
+    if session is not None:
+        session.close()
+
     n = len(questions)
     summary = {
         "label": label,
+        "retriever": retriever_name,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "num_questions": n,
         "raw_chunk_pool": RAW_CHUNK_POOL,
@@ -114,8 +138,8 @@ def run(label: str) -> dict:
 
 def print_report(summary: dict, output_path: Path) -> None:
     print(
-        f"Eval run: {summary['label']} "
-        f"({summary['num_questions']} questions, raw pool {summary['raw_chunk_pool']})"
+        f"Eval run: {summary['label']} (retriever={summary['retriever']}, "
+        f"{summary['num_questions']} questions, raw pool {summary['raw_chunk_pool']})"
     )
     for k in RECALL_KS:
         print(f"  recall@{k}: {summary['recall_at_k'][str(k)]:.2f}")
@@ -138,10 +162,16 @@ def compare(label: str, baseline_label: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("label", help="Name for this eval run, e.g. phase0_dense_only")
+    parser.add_argument(
+        "--retriever",
+        choices=["dense", "hybrid"],
+        default="dense",
+        help="Which retrieval strategy to evaluate (default: dense).",
+    )
     parser.add_argument("--compare-to", help="Label of a previous run to compare against")
     args = parser.parse_args()
 
-    run(args.label)
+    run(args.label, retriever_name=args.retriever)
 
     if args.compare_to:
         compare(args.label, args.compare_to)

@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     chunk_overlap: int = 150
     retrieval_k: int = 4
     llm_model: str = "openai/gpt-oss-20b"
+    hybrid_retrieval_enabled: bool = False
 
 
 @lru_cache

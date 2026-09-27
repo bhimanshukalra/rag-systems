@@ -60,6 +60,36 @@ def test_search_excludes_zero_overlap_documents(session):
     assert results == []
 
 
+def test_search_ignores_stopwords_in_natural_language_questions(session):
+    # A full-sentence question shares common English words ("what", "does",
+    # "do", "a", "for") with an unrelated document; without stopword
+    # filtering those words dilute the one rare, actually-relevant term.
+    docs = [
+        Document(
+            page_content="a for loop iterates using the range function",
+            metadata={"source": "controlflow.html"},
+        ),
+        Document(
+            page_content="what a list does for storing items, and how to do it",
+            metadata={"source": "unrelated.html"},
+        ),
+        # A neutral filler doc, so "range"/"function"/"loop" sit at 1-of-3
+        # document frequency rather than 1-of-2 -- at exactly 1-of-2, this
+        # BM25 implementation's IDF formula degenerates to precisely zero
+        # (log(1.5) - log(1.5) == 0), an artifact of a 2-doc toy corpus,
+        # not a real property of the actual multi-hundred-chunk corpus.
+        Document(
+            page_content="widgets ship with a warranty and a stipend",
+            metadata={"source": "filler.html"},
+        ),
+    ]
+    add_chunks(session, docs)
+
+    results = search(session, "What does the range() function do inside a for loop?", k=2)
+
+    assert results[0].metadata["source"] == "controlflow.html"
+
+
 def test_search_returns_empty_list_when_index_is_empty(session):
     results = search(session, "anything", k=5)
 
