@@ -1,9 +1,7 @@
 from pathlib import Path
-from typing import ClassVar
 
 import pytest
 from fastapi.testclient import TestClient
-from langchain_core.documents import Document
 
 import agentic_rag.api.routes as routes_module
 import agentic_rag.ingestion.pipeline as pipeline_module
@@ -99,28 +97,19 @@ def test_get_source_status_returns_404_for_unknown_id(client):
     assert response.status_code == 404
 
 
-def test_query_returns_answer_and_sources(client, monkeypatch):
-    class _FakeVectorStore:
-        def similarity_search(self, question, k):
-            return [
-                Document(page_content="the answer is 42", metadata={"source": "s1"})
-            ]
+def test_query_returns_agent_answer(client, monkeypatch):
+    captured = {}
 
-    class _FakeResult:
-        answer = "42"
-        sources: ClassVar[list[str]] = ["s1"]
+    def fake_run_agent(question, *, session, vector_store, settings):
+        captured.update(question=question, vector_store=vector_store)
+        return "42"
 
     monkeypatch.setattr(routes_module, "get_embeddings", lambda _model: _FakeEmbeddings())
-    monkeypatch.setattr(
-        routes_module, "get_vector_store", lambda *args, **kwargs: _FakeVectorStore()
-    )
-    monkeypatch.setattr(
-        routes_module,
-        "generate_answer",
-        lambda question, docs, *, model: _FakeResult(),
-    )
+    monkeypatch.setattr(routes_module, "get_vector_store", lambda *args, **kwargs: "vector-store")
+    monkeypatch.setattr(routes_module, "run_agent", fake_run_agent)
 
     response = client.post("/query", json={"question": "what is the answer?"})
 
     assert response.status_code == 200
-    assert response.json() == {"answer": "42", "sources": ["s1"]}
+    assert response.json() == {"answer": "42", "sources": []}
+    assert captured == {"question": "what is the answer?", "vector_store": "vector-store"}

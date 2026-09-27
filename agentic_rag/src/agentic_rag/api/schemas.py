@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from agentic_rag.persistence.models import SourceStatus
 
@@ -30,7 +30,10 @@ class QueryRequest(BaseModel):
 
 class QueryResponse(BaseModel):
     answer: str
-    sources: list[str]
+    # The agent loop doesn't return structured per-chunk sources (see the
+    # trade-off documented on agent/tools.py's generate_answer wrapper),
+    # so this defaults empty rather than requiring every caller to pass one.
+    sources: list[str] = Field(default_factory=list)
 
 
 class HealthResponse(BaseModel):

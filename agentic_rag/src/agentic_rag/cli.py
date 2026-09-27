@@ -3,14 +3,13 @@ import logging
 
 from sqlmodel import Session
 
+from agentic_rag.agent.loop import run_agent
 from agentic_rag.config import get_settings
-from agentic_rag.generation.synthesizer import generate_answer
 from agentic_rag.indexing.embeddings import get_embeddings
 from agentic_rag.indexing.vector_store import get_vector_store
 from agentic_rag.ingestion.pipeline import backfill_keyword_index, ingest_source
 from agentic_rag.observability.logging import configure_logging
 from agentic_rag.persistence.registry import create_engine_for
-from agentic_rag.retrieval.pipeline import retrieve
 
 logger = logging.getLogger(__name__)
 
@@ -66,17 +65,11 @@ def ask(question: str) -> None:
     engine = create_engine_for(settings.database_path)
 
     with Session(engine) as session:
-        documents = retrieve(
+        answer = run_agent(
             question, session=session, vector_store=vector_store, settings=settings
         )
 
-    result = generate_answer(question, documents, model=settings.llm_model)
-
-    print(result.answer)
-    print()
-    print("Sources:")
-    for source in result.sources:
-        print(f"  - {source}")
+    print(answer)
 
 
 def main() -> None:

@@ -4,6 +4,7 @@ from functools import lru_cache
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
+from agentic_rag.agent.loop import run_agent
 from agentic_rag.api.schemas import (
     HealthResponse,
     IngestSourceRequest,
@@ -12,13 +13,11 @@ from agentic_rag.api.schemas import (
     SourceResponse,
 )
 from agentic_rag.config import Settings, get_settings
-from agentic_rag.generation.synthesizer import generate_answer
 from agentic_rag.indexing.embeddings import get_embeddings
 from agentic_rag.indexing.vector_store import get_vector_store
 from agentic_rag.ingestion.pipeline import ingest_source
 from agentic_rag.persistence import registry
 from agentic_rag.persistence.registry import create_engine_for
-from agentic_rag.retrieval.pipeline import retrieve
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +84,7 @@ def query(
         api_key=settings.pinecone_api_key,
         index_name=settings.pinecone_index_name,
     )
-    documents = retrieve(
+    answer = run_agent(
         payload.question, session=session, vector_store=vector_store, settings=settings
     )
-    result = generate_answer(payload.question, documents, model=settings.llm_model)
-    return QueryResponse(answer=result.answer, sources=result.sources)
+    return QueryResponse(answer=answer)
