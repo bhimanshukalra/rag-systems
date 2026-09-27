@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     hybrid_retrieval_enabled: bool = False
     reranking_enabled: bool = False
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    contextual_chunking_enabled: bool = False
 
 
 @lru_cache

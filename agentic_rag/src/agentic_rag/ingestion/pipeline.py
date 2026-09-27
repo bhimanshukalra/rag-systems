@@ -7,6 +7,7 @@ from agentic_rag.indexing import keyword_index
 from agentic_rag.indexing.embeddings import get_embeddings
 from agentic_rag.indexing.vector_store import upsert_documents
 from agentic_rag.ingestion.chunking import chunk_documents
+from agentic_rag.ingestion.contextualize import contextualize_chunks
 from agentic_rag.ingestion.loaders.markdown import load_markdown
 from agentic_rag.ingestion.loaders.pdf import load_pdf
 from agentic_rag.ingestion.loaders.web import load_web
@@ -46,9 +47,13 @@ def ingest_source(
     chunk_size: int,
     chunk_overlap: int,
     request_timeout_seconds: float,
+    contextual_chunking_enabled: bool = False,
+    llm_model: str | None = None,
 ) -> SourceRecord:
     if source_type not in _LOADERS:
         raise ValueError(f"unknown source_type {source_type!r}")
+    if contextual_chunking_enabled and not llm_model:
+        raise ValueError("llm_model is required when contextual_chunking_enabled")
 
     content_hash = compute_content_hash(source_type, location)
     record = registry.get_or_create_source(
@@ -69,6 +74,9 @@ def ingest_source(
         chunks = chunk_documents(
             raw_docs, chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
+        if contextual_chunking_enabled:
+            document_text = "\n\n".join(doc.page_content for doc in raw_docs)
+            chunks = contextualize_chunks(chunks, document_text, model=llm_model)
         embeddings = get_embeddings(embedding_model)
         upsert_documents(
             chunks,

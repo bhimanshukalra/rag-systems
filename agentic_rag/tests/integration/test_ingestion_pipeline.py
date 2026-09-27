@@ -131,6 +131,60 @@ def test_ingest_rejects_unknown_source_type(session):
         ingest_source(session, source_type="video", location="x", **COMMON_KWARGS)
 
 
+def test_ingest_skips_contextualization_by_default(monkeypatch, session):
+    calls = []
+    monkeypatch.setattr(
+        pipeline_module,
+        "contextualize_chunks",
+        lambda chunks, document_text, *, model: calls.append(1) or chunks,
+    )
+
+    ingest_source(
+        session, source_type="markdown", location=str(FIXTURE_PATH), **COMMON_KWARGS
+    )
+
+    assert calls == []
+
+
+def test_ingest_applies_contextualization_when_enabled(monkeypatch, session):
+    calls = []
+
+    def fake_contextualize(chunks, document_text, *, model):
+        calls.append({"document_text": document_text, "model": model, "n": len(chunks)})
+        return [
+            Document(page_content=f"CONTEXT: {c.page_content}", metadata=c.metadata)
+            for c in chunks
+        ]
+
+    monkeypatch.setattr(pipeline_module, "contextualize_chunks", fake_contextualize)
+
+    record = ingest_source(
+        session,
+        source_type="markdown",
+        location=str(FIXTURE_PATH),
+        contextual_chunking_enabled=True,
+        llm_model="fake-llm",
+        **COMMON_KWARGS,
+    )
+
+    assert record.status == SourceStatus.READY
+    assert len(calls) == 1
+    assert calls[0]["model"] == "fake-llm"
+    assert keyword_search(session, "CONTEXT vacation days", k=5)
+
+
+def test_ingest_requires_llm_model_when_contextualization_enabled(session):
+    with pytest.raises(ValueError):
+        ingest_source(
+            session,
+            source_type="markdown",
+            location=str(FIXTURE_PATH),
+            contextual_chunking_enabled=True,
+            llm_model=None,
+            **COMMON_KWARGS,
+        )
+
+
 def test_compute_content_hash_is_stable_and_type_sensitive():
     a = compute_content_hash("web", "https://example.test/")
     b = compute_content_hash("web", "https://example.test/")

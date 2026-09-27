@@ -56,6 +56,8 @@ def create_source(
         chunk_size=settings.chunk_size,
         chunk_overlap=settings.chunk_overlap,
         request_timeout_seconds=settings.request_timeout_seconds,
+        contextual_chunking_enabled=settings.contextual_chunking_enabled,
+        llm_model=settings.llm_model,
     )
     return SourceResponse.model_validate(record)
 
