@@ -34,6 +34,16 @@ RECALL_KS = (1, 4, 10)
 # leaving no room to observe recall for anything beyond rank 1.
 RAW_CHUNK_POOL = 40
 
+# out_of_corpus questions have no valid expected_sources -- nothing in the
+# corpus is correct for them by design. Scoring them the same way as
+# ordinary questions would always count as a "miss" even when retrieval
+# correctly found nothing relevant, corrupting the aggregate recall@k/MRR.
+# They're excluded from the aggregate but still recorded per-question;
+# assessing whether they're handled *correctly* (recognizing insufficient
+# evidence, falling back to web search) is an agent-loop-level behavior,
+# not something this retrieval-only script can judge.
+EXCLUDED_FROM_AGGREGATE = {"out_of_corpus"}
+
 
 def load_golden_qa() -> list[dict]:
     with GOLDEN_QA_PATH.open() as f:
@@ -95,6 +105,7 @@ def run(label: str, retriever_name: str = "dense", rerank_enabled: bool = False)
     per_question = []
     totals = dict.fromkeys(RECALL_KS, 0)
     mrr_sum = 0.0
+    n_aggregated = 0
 
     for item in questions:
         documents = retrieve(item["question"])
@@ -103,14 +114,19 @@ def run(label: str, retriever_name: str = "dense", rerank_enabled: bool = False)
             retrieved_sources, item["expected_sources"]
         )
 
-        for k, hit in recalls.items():
-            totals[k] += hit
-        mrr_sum += reciprocal_rank
+        category = item.get("category")
+        excluded = category in EXCLUDED_FROM_AGGREGATE
+        if not excluded:
+            for k, hit in recalls.items():
+                totals[k] += hit
+            mrr_sum += reciprocal_rank
+            n_aggregated += 1
 
         per_question.append(
             {
                 "question": item["question"],
-                "category": item.get("category"),
+                "category": category,
+                "excluded_from_aggregate": excluded,
                 "expected_sources": item["expected_sources"],
                 "retrieved_sources": retrieved_sources,
                 "hit_rank": hit_rank,
@@ -122,16 +138,17 @@ def run(label: str, retriever_name: str = "dense", rerank_enabled: bool = False)
     if session is not None:
         session.close()
 
-    n = len(questions)
     summary = {
         "label": label,
         "retriever": retriever_name,
         "rerank_enabled": rerank_enabled,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "num_questions": n,
+        "num_questions": len(questions),
+        "num_aggregated": n_aggregated,
+        "num_excluded": len(questions) - n_aggregated,
         "raw_chunk_pool": RAW_CHUNK_POOL,
-        "recall_at_k": {str(k): totals[k] / n for k in RECALL_KS},
-        "mrr": mrr_sum / n,
+        "recall_at_k": {str(k): totals[k] / n_aggregated for k in RECALL_KS},
+        "mrr": mrr_sum / n_aggregated,
     }
 
     RESULTS_DIR.mkdir(exist_ok=True)
@@ -150,6 +167,11 @@ def print_report(summary: dict, output_path: Path) -> None:
         f"rerank={summary['rerank_enabled']}, "
         f"{summary['num_questions']} questions, raw pool {summary['raw_chunk_pool']})"
     )
+    if summary["num_excluded"]:
+        print(
+            f"  ({summary['num_excluded']} out_of_corpus question(s) excluded from "
+            f"recall/MRR below -- agent-loop-level behavior, not retrieval-level)"
+        )
     for k in RECALL_KS:
         print(f"  recall@{k}: {summary['recall_at_k'][str(k)]:.2f}")
     print(f"  MRR: {summary['mrr']:.3f}")

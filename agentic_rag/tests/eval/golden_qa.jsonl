@@ -13,3 +13,7 @@
 {"question": "According to the security policy, how quickly must a Severity 1 incident be escalated to the CISO?", "expected_sources": ["tests/fixtures/sample_security.md"], "category": "exact_term"}
 {"question": "Is the Transformer architecture in 'Attention Is All You Need' based on recurrence or convolution, or neither?", "expected_sources": ["https://arxiv.org/pdf/1706.03762"], "category": "discrimination"}
 {"question": "What dataset was primarily used to demonstrate ResNet's performance improvements?", "expected_sources": ["https://arxiv.org/pdf/1512.03385"], "category": "discrimination"}
+{"question": "Does BERT or the original Transformer paper introduce the encoder-decoder architecture first?", "expected_sources": ["https://arxiv.org/pdf/1810.04805", "https://arxiv.org/pdf/1706.03762"], "category": "multi_hop"}
+{"question": "Does the ResNet paper or the BERT paper report results on a larger benchmark dataset?", "expected_sources": ["https://arxiv.org/pdf/1512.03385", "https://arxiv.org/pdf/1810.04805"], "category": "multi_hop"}
+{"question": "What is the current CEO of OpenAI?", "expected_sources": [], "category": "out_of_corpus"}
+{"question": "What is the tallest mountain in the world?", "expected_sources": [], "category": "out_of_corpus"}
