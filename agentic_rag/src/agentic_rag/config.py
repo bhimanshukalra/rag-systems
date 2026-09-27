@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = 1000
     chunk_overlap: int = 150
+    retrieval_k: int = 4
+    llm_model: str = "openai/gpt-oss-20b"
 
 
 @lru_cache

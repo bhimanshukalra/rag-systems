@@ -22,6 +22,9 @@ dependencies = [
     "uvicorn[standard]>=0.30.0",
 ]
 
+[project.scripts]
+agentic-rag = "agentic_rag.cli:main"
+
 [dependency-groups]
 dev = [
     "httpx>=0.27.0",
@@ -38,3 +41,7 @@ packages = ["src/agentic_rag"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff.lint.per-file-ignores]
+# Depends(...) in argument defaults is FastAPI's required pattern, not a bug.
+"src/agentic_rag/api/*.py" = ["B008"]
