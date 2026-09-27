@@ -7,7 +7,7 @@ from agentic_rag.config import get_settings
 from agentic_rag.generation.synthesizer import generate_answer
 from agentic_rag.indexing.embeddings import get_embeddings
 from agentic_rag.indexing.vector_store import get_vector_store
-from agentic_rag.ingestion.pipeline import ingest_source
+from agentic_rag.ingestion.pipeline import backfill_keyword_index, ingest_source
 from agentic_rag.observability.logging import configure_logging
 from agentic_rag.persistence.registry import create_engine_for
 
@@ -35,6 +35,21 @@ def ingest(source_type: str, location: str) -> None:
         f"[{record.status}] source {record.id}: {record.url_or_path} "
         f"({record.chunk_count} chunks)"
     )
+
+
+def reindex_keyword() -> None:
+    settings = get_settings()
+    engine = create_engine_for(settings.database_path)
+
+    with Session(engine) as session:
+        count = backfill_keyword_index(
+            session,
+            chunk_size=settings.chunk_size,
+            chunk_overlap=settings.chunk_overlap,
+            request_timeout_seconds=settings.request_timeout_seconds,
+        )
+
+    print(f"Backfilled keyword index for {count} ready source(s).")
 
 
 def ask(question: str) -> None:
@@ -68,12 +83,19 @@ def main() -> None:
     ask_parser = subparsers.add_parser("ask", help="Ask a question.")
     ask_parser.add_argument("question")
 
+    subparsers.add_parser(
+        "reindex-keyword",
+        help="Rebuild the BM25 keyword index from all ready sources.",
+    )
+
     args = parser.parse_args()
 
     if args.command == "ingest":
         ingest(args.source_type, args.location)
     elif args.command == "ask":
         ask(args.question)
+    elif args.command == "reindex-keyword":
+        reindex_keyword()
 
 
 if __name__ == "__main__":

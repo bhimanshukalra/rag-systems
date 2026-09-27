@@ -3,6 +3,7 @@ import logging
 
 from sqlmodel import Session
 
+from agentic_rag.indexing import keyword_index
 from agentic_rag.indexing.embeddings import get_embeddings
 from agentic_rag.indexing.vector_store import upsert_documents
 from agentic_rag.ingestion.chunking import chunk_documents
@@ -75,6 +76,10 @@ def ingest_source(
             api_key=pinecone_api_key,
             index_name=pinecone_index_name,
         )
+        # Always populate the keyword index during ingestion, regardless
+        # of whether hybrid retrieval is currently enabled for querying --
+        # that flag gates query-time behavior, not data population.
+        keyword_index.add_chunks(session, chunks)
     except Exception as exc:
         # Ingestion is a job boundary: any failure here must be recorded
         # against the source, not raised and lost by a background task.
@@ -82,3 +87,32 @@ def ingest_source(
         return registry.mark_failed(session, record.id, error=str(exc))
 
     return registry.mark_ready(session, record.id, chunk_count=len(chunks))
+
+
+def backfill_keyword_index(
+    session: Session,
+    *,
+    chunk_size: int,
+    chunk_overlap: int,
+    request_timeout_seconds: float,
+) -> int:
+    """Populate the keyword index for sources ingested before it existed.
+
+    Re-loads and re-chunks each already-`ready` source rather than going
+    through ingest_source() -- that function's READY short-circuit exists
+    to skip redundant work, which is exactly what we don't want here. This
+    re-fetches (cheap, local/network read) but never touches Pinecone
+    again, since the dense index is already correct for these sources.
+    Returns the number of sources backfilled.
+    """
+    backfilled = 0
+    for record in registry.list_sources(session):
+        if record.status != SourceStatus.READY:
+            continue
+        raw_docs = _LOADERS[record.source_type](record.url_or_path, request_timeout_seconds)
+        chunks = chunk_documents(
+            raw_docs, chunk_size=chunk_size, chunk_overlap=chunk_overlap
+        )
+        keyword_index.add_chunks(session, chunks)
+        backfilled += 1
+    return backfilled

@@ -5,7 +5,12 @@ from langchain_core.documents import Document
 from sqlmodel import Session
 
 import agentic_rag.ingestion.pipeline as pipeline_module
-from agentic_rag.ingestion.pipeline import compute_content_hash, ingest_source
+from agentic_rag.indexing.keyword_index import search as keyword_search
+from agentic_rag.ingestion.pipeline import (
+    backfill_keyword_index,
+    compute_content_hash,
+    ingest_source,
+)
 from agentic_rag.persistence.models import SourceStatus
 from agentic_rag.persistence.registry import create_engine_for
 
@@ -60,6 +65,10 @@ def test_ingest_markdown_source_end_to_end(session, mock_embeddings_and_vector_s
     assert record.status == SourceStatus.READY
     assert record.chunk_count > 0
     assert len(mock_embeddings_and_vector_store["calls"]) == 1
+
+    # keyword_index.add_chunks() is real/unmocked -- confirms the wiring
+    # actually populates the keyword index too, not just Pinecone.
+    assert keyword_search(session, "vacation days", k=5)
 
 
 def test_ingest_dispatches_to_the_right_loader_by_source_type(monkeypatch, session):
@@ -129,3 +138,58 @@ def test_compute_content_hash_is_stable_and_type_sensitive():
 
     assert a == b
     assert a != c
+
+
+def test_backfill_keyword_index_populates_ready_sources(session):
+    ingest_source(
+        session, source_type="markdown", location=str(FIXTURE_PATH), **COMMON_KWARGS
+    )
+
+    count = backfill_keyword_index(
+        session,
+        chunk_size=COMMON_KWARGS["chunk_size"],
+        chunk_overlap=COMMON_KWARGS["chunk_overlap"],
+        request_timeout_seconds=COMMON_KWARGS["request_timeout_seconds"],
+    )
+
+    assert count == 1
+    assert keyword_search(session, "vacation days", k=5)
+
+
+def test_backfill_keyword_index_skips_non_ready_sources(monkeypatch, session):
+    def failing_loader(location):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(pipeline_module, "load_markdown", failing_loader)
+    ingest_source(
+        session, source_type="markdown", location=str(FIXTURE_PATH), **COMMON_KWARGS
+    )
+
+    # The source is FAILED, not READY, so backfill must skip it entirely --
+    # the loader is never called again, regardless of whether it's patched.
+    count = backfill_keyword_index(
+        session,
+        chunk_size=COMMON_KWARGS["chunk_size"],
+        chunk_overlap=COMMON_KWARGS["chunk_overlap"],
+        request_timeout_seconds=COMMON_KWARGS["request_timeout_seconds"],
+    )
+
+    assert count == 0
+
+
+def test_backfill_keyword_index_never_calls_embeddings_or_pinecone(
+    monkeypatch, session, mock_embeddings_and_vector_store
+):
+    ingest_source(
+        session, source_type="markdown", location=str(FIXTURE_PATH), **COMMON_KWARGS
+    )
+    calls_after_ingest = len(mock_embeddings_and_vector_store["calls"])
+
+    backfill_keyword_index(
+        session,
+        chunk_size=COMMON_KWARGS["chunk_size"],
+        chunk_overlap=COMMON_KWARGS["chunk_overlap"],
+        request_timeout_seconds=COMMON_KWARGS["request_timeout_seconds"],
+    )
+
+    assert len(mock_embeddings_and_vector_store["calls"]) == calls_after_ingest
