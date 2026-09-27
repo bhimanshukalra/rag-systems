@@ -20,6 +20,7 @@ from agentic_rag.indexing.embeddings import get_embeddings
 from agentic_rag.indexing.vector_store import get_vector_store
 from agentic_rag.persistence.registry import create_engine_for
 from agentic_rag.retrieval.hybrid import hybrid_retrieve
+from agentic_rag.retrieval.reranker import rerank
 
 EVAL_DIR = Path(__file__).parent
 GOLDEN_QA_PATH = EVAL_DIR / "golden_qa.jsonl"
@@ -59,7 +60,7 @@ def score_question(retrieved_sources: list[str], expected_sources: list[str]):
     return recalls, reciprocal_rank, hit_rank
 
 
-def run(label: str, retriever_name: str = "dense") -> dict:
+def run(label: str, retriever_name: str = "dense", rerank_enabled: bool = False) -> dict:
     settings = get_settings()
     embeddings = get_embeddings(settings.embedding_model)
     vector_store = get_vector_store(
@@ -75,14 +76,20 @@ def run(label: str, retriever_name: str = "dense") -> dict:
 
     def retrieve(query: str) -> list:
         if retriever_name == "hybrid":
-            return hybrid_retrieve(
+            documents = hybrid_retrieve(
                 session,
                 query,
                 vector_store=vector_store,
                 k=RAW_CHUNK_POOL,
                 pool_size=RAW_CHUNK_POOL,
             )
-        return vector_store.similarity_search(query, k=RAW_CHUNK_POOL)
+        else:
+            documents = vector_store.similarity_search(query, k=RAW_CHUNK_POOL)
+
+        if rerank_enabled:
+            documents = rerank(query, documents, model_name=settings.reranker_model)
+
+        return documents
 
     questions = load_golden_qa()
     per_question = []
@@ -119,6 +126,7 @@ def run(label: str, retriever_name: str = "dense") -> dict:
     summary = {
         "label": label,
         "retriever": retriever_name,
+        "rerank_enabled": rerank_enabled,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "num_questions": n,
         "raw_chunk_pool": RAW_CHUNK_POOL,
@@ -139,6 +147,7 @@ def run(label: str, retriever_name: str = "dense") -> dict:
 def print_report(summary: dict, output_path: Path) -> None:
     print(
         f"Eval run: {summary['label']} (retriever={summary['retriever']}, "
+        f"rerank={summary['rerank_enabled']}, "
         f"{summary['num_questions']} questions, raw pool {summary['raw_chunk_pool']})"
     )
     for k in RECALL_KS:
@@ -168,10 +177,15 @@ def main() -> None:
         default="dense",
         help="Which retrieval strategy to evaluate (default: dense).",
     )
+    parser.add_argument(
+        "--rerank",
+        action="store_true",
+        help="Apply cross-encoder reranking to the retrieved pool before scoring.",
+    )
     parser.add_argument("--compare-to", help="Label of a previous run to compare against")
     args = parser.parse_args()
 
-    run(args.label, retriever_name=args.retriever)
+    run(args.label, retriever_name=args.retriever, rerank_enabled=args.rerank)
 
     if args.compare_to:
         compare(args.label, args.compare_to)

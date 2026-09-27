@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     retrieval_k: int = 4
     llm_model: str = "openai/gpt-oss-20b"
     hybrid_retrieval_enabled: bool = False
+    reranking_enabled: bool = False
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 
 @lru_cache
