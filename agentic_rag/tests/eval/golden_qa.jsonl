@@ -1,0 +1,15 @@
+{"question": "How many paid vacation days do full-time employees receive per year, and how many can roll over?", "expected_sources": ["tests/fixtures/sample.md"], "category": "semantic"}
+{"question": "How do you start the Python interpreter in interactive mode?", "expected_sources": ["https://docs.python.org/3/tutorial/introduction.html"], "category": "semantic"}
+{"question": "What is the multi-head attention mechanism introduced in the original Transformer paper?", "expected_sources": ["https://arxiv.org/pdf/1706.03762"], "category": "discrimination"}
+{"question": "What is the peak power draw and warranty length of SKU-4471-B?", "expected_sources": ["tests/fixtures/sample_products.md"], "category": "exact_term"}
+{"question": "How often must employee passwords be rotated under the IT security policy?", "expected_sources": ["tests/fixtures/sample_security.md"], "category": "exact_term"}
+{"question": "What does Python's range() function do inside a for loop?", "expected_sources": ["https://docs.python.org/3/tutorial/controlflow.html"], "category": "semantic"}
+{"question": "How do you add an item to a Python list?", "expected_sources": ["https://docs.python.org/3/tutorial/datastructures.html"], "category": "semantic"}
+{"question": "How do you import a specific function from a Python module?", "expected_sources": ["https://docs.python.org/3/tutorial/modules.html"], "category": "semantic"}
+{"question": "What does Python's try/except block do?", "expected_sources": ["https://docs.python.org/3/tutorial/errors.html"], "category": "semantic"}
+{"question": "What pre-training objective does BERT use, according to the BERT paper?", "expected_sources": ["https://arxiv.org/pdf/1810.04805"], "category": "discrimination"}
+{"question": "What problem do residual connections solve in ResNet?", "expected_sources": ["https://arxiv.org/pdf/1512.03385"], "category": "discrimination"}
+{"question": "What is SKU-2205-A and how much does it retail for?", "expected_sources": ["tests/fixtures/sample_products.md"], "category": "exact_term"}
+{"question": "According to the security policy, how quickly must a Severity 1 incident be escalated to the CISO?", "expected_sources": ["tests/fixtures/sample_security.md"], "category": "exact_term"}
+{"question": "Is the Transformer architecture in 'Attention Is All You Need' based on recurrence or convolution, or neither?", "expected_sources": ["https://arxiv.org/pdf/1706.03762"], "category": "discrimination"}
+{"question": "What dataset was primarily used to demonstrate ResNet's performance improvements?", "expected_sources": ["https://arxiv.org/pdf/1512.03385"], "category": "discrimination"}
