@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     reranking_enabled: bool = False
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     contextual_chunking_enabled: bool = False
+    tavily_api_key: str | None = None
+    agent_max_steps: int = 6
 
 
 @lru_cache
