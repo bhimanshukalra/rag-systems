@@ -1,6 +1,13 @@
 from functools import lru_cache
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# pydantic-settings' env_file only populates this module's Settings object;
+# it doesn't set real process environment variables. Some third-party
+# libraries we depend on (e.g. langchain_pinecone) read PINECONE_API_KEY
+# from os.environ directly, so .env must also be loaded the plain way.
+load_dotenv()
 
 
 class Settings(BaseSettings):

@@ -61,6 +61,7 @@ def upsert_documents(
         embedding=embeddings,
         index_name=index_name,
         ids=[get_chunk_id(chunk) for chunk in chunks],
+        pinecone_api_key=api_key,
     )
 
     logger.info("Upserted %d chunks into Pinecone index %s", len(chunks), index_name)

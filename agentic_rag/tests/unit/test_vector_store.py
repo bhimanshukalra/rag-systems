@@ -64,8 +64,10 @@ def test_upsert_creates_index_when_missing(monkeypatch):
         calls: ClassVar[list] = []
 
         @classmethod
-        def from_documents(cls, *, documents, embedding, index_name, ids):
-            cls.calls.append({"index_name": index_name, "ids": ids})
+        def from_documents(cls, *, documents, embedding, index_name, ids, pinecone_api_key):
+            cls.calls.append(
+                {"index_name": index_name, "ids": ids, "pinecone_api_key": pinecone_api_key}
+            )
             return "vector-store"
 
     monkeypatch.setattr(vector_store_module, "Pinecone", FakePinecone)
@@ -79,6 +81,10 @@ def test_upsert_creates_index_when_missing(monkeypatch):
     assert created == [{"name": "my-index", "dimension": 3}]
     assert FakeVectorStore.calls[-1]["index_name"] == "my-index"
     assert FakeVectorStore.calls[-1]["ids"] == [get_chunk_id(docs[0])]
+    # PineconeVectorStore.from_documents() builds its own internal Pinecone
+    # client -- it does NOT reuse the one constructed above for index
+    # creation, so the api_key must be passed here explicitly too.
+    assert FakeVectorStore.calls[-1]["pinecone_api_key"] == "key"
 
 
 def test_upsert_skips_create_when_index_already_exists(monkeypatch):
