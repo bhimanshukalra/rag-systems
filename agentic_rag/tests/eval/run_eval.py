@@ -70,7 +70,27 @@ def score_question(retrieved_sources: list[str], expected_sources: list[str]):
     return recalls, reciprocal_rank, hit_rank
 
 
-def run(label: str, retriever_name: str = "dense", rerank_enabled: bool = False) -> dict:
+# --exclude-source lets two indexes with different source coverage (e.g. a
+# partially re-ingested experimental index vs. the full production one) be
+# compared fairly on the identical sub-corpus: questions that depend on an
+# excluded source are dropped, and the excluded sources' chunks are removed
+# from retrieved results so they can't act as distractors in only one run.
+
+
+def filter_questions(questions: list[dict], excluded_sources) -> list[dict]:
+    return [q for q in questions if not (set(q["expected_sources"]) & excluded_sources)]
+
+
+def filter_documents(documents: list, excluded_sources) -> list:
+    return [d for d in documents if d.metadata.get("source") not in excluded_sources]
+
+
+def run(
+    label: str,
+    retriever_name: str = "dense",
+    rerank_enabled: bool = False,
+    excluded_sources: frozenset[str] = frozenset(),
+) -> dict:
     settings = get_settings()
     embeddings = get_embeddings(settings.embedding_model)
     vector_store = get_vector_store(
@@ -96,12 +116,14 @@ def run(label: str, retriever_name: str = "dense", rerank_enabled: bool = False)
         else:
             documents = vector_store.similarity_search(query, k=RAW_CHUNK_POOL)
 
+        documents = filter_documents(documents, excluded_sources)
+
         if rerank_enabled:
             documents = rerank(query, documents, model_name=settings.reranker_model)
 
         return documents
 
-    questions = load_golden_qa()
+    questions = filter_questions(load_golden_qa(), excluded_sources)
     per_question = []
     totals = dict.fromkeys(RECALL_KS, 0)
     mrr_sum = 0.0
@@ -204,10 +226,24 @@ def main() -> None:
         action="store_true",
         help="Apply cross-encoder reranking to the retrieved pool before scoring.",
     )
+    parser.add_argument(
+        "--exclude-source",
+        action="append",
+        default=[],
+        help=(
+            "Source (URL/path) to exclude from both questions and retrieved "
+            "chunks; repeatable. For comparing indexes with different coverage."
+        ),
+    )
     parser.add_argument("--compare-to", help="Label of a previous run to compare against")
     args = parser.parse_args()
 
-    run(args.label, retriever_name=args.retriever, rerank_enabled=args.rerank)
+    run(
+        args.label,
+        retriever_name=args.retriever,
+        rerank_enabled=args.rerank,
+        excluded_sources=frozenset(args.exclude_source),
+    )
 
     if args.compare_to:
         compare(args.label, args.compare_to)

@@ -1,0 +1,327 @@
+{
+  "summary": {
+    "label": "ctx_baseline_9src",
+    "retriever": "hybrid",
+    "rerank_enabled": true,
+    "timestamp": "2026-10-03T04:03:00Z",
+    "num_questions": 14,
+    "num_aggregated": 12,
+    "num_excluded": 2,
+    "raw_chunk_pool": 40,
+    "recall_at_k": {
+      "1": 1.0,
+      "4": 1.0,
+      "10": 1.0
+    },
+    "mrr": 1.0
+  },
+  "per_question": [
+    {
+      "question": "How many paid vacation days do full-time employees receive per year, and how many can roll over?",
+      "category": "semantic",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "tests/fixtures/sample.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample.md",
+        "tests/fixtures/sample_security.md",
+        "https://arxiv.org/pdf/1706.03762",
+        "tests/fixtures/sample_products.md",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/modules.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "How do you start the Python interpreter in interactive mode?",
+      "category": "semantic",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/introduction.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/datastructures.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What is the multi-head attention mechanism introduced in the original Transformer paper?",
+      "category": "discrimination",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "https://arxiv.org/pdf/1706.03762"
+      ],
+      "retrieved_sources": [
+        "https://arxiv.org/pdf/1706.03762"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What is the peak power draw and warranty length of SKU-4471-B?",
+      "category": "exact_term",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "tests/fixtures/sample_products.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample_products.md",
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "tests/fixtures/sample.md",
+        "tests/fixtures/sample_security.md"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "How often must employee passwords be rotated under the IT security policy?",
+      "category": "exact_term",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "tests/fixtures/sample_security.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample_security.md",
+        "tests/fixtures/sample.md",
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "tests/fixtures/sample_products.md"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What does Python's range() function do inside a for loop?",
+      "category": "semantic",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/controlflow.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/datastructures.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "How do you add an item to a Python list?",
+      "category": "semantic",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/datastructures.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/errors.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "How do you import a specific function from a Python module?",
+      "category": "semantic",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/modules.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/errors.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What does Python's try/except block do?",
+      "category": "semantic",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "https://docs.python.org/3/tutorial/errors.html"
+      ],
+      "retrieved_sources": [
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/datastructures.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What is SKU-2205-A and how much does it retail for?",
+      "category": "exact_term",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "tests/fixtures/sample_products.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample_products.md",
+        "tests/fixtures/sample.md",
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "tests/fixtures/sample_security.md"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "According to the security policy, how quickly must a Severity 1 incident be escalated to the CISO?",
+      "category": "exact_term",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "tests/fixtures/sample_security.md"
+      ],
+      "retrieved_sources": [
+        "tests/fixtures/sample_security.md",
+        "tests/fixtures/sample.md",
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/introduction.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/errors.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "Is the Transformer architecture in 'Attention Is All You Need' based on recurrence or convolution, or neither?",
+      "category": "discrimination",
+      "excluded_from_aggregate": false,
+      "expected_sources": [
+        "https://arxiv.org/pdf/1706.03762"
+      ],
+      "retrieved_sources": [
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/errors.html"
+      ],
+      "hit_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recalls": {
+        "1": 1,
+        "4": 1,
+        "10": 1
+      }
+    },
+    {
+      "question": "What is the current CEO of OpenAI?",
+      "category": "out_of_corpus",
+      "excluded_from_aggregate": true,
+      "expected_sources": [],
+      "retrieved_sources": [
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/controlflow.html"
+      ],
+      "hit_rank": null,
+      "reciprocal_rank": 0.0,
+      "recalls": {
+        "1": 0,
+        "4": 0,
+        "10": 0
+      }
+    },
+    {
+      "question": "What is the tallest mountain in the world?",
+      "category": "out_of_corpus",
+      "excluded_from_aggregate": true,
+      "expected_sources": [],
+      "retrieved_sources": [
+        "https://arxiv.org/pdf/1706.03762",
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://docs.python.org/3/tutorial/modules.html",
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://docs.python.org/3/tutorial/controlflow.html",
+        "https://docs.python.org/3/tutorial/introduction.html"
+      ],
+      "hit_rank": null,
+      "reciprocal_rank": 0.0,
+      "recalls": {
+        "1": 0,
+        "4": 0,
+        "10": 0
+      }
+    }
+  ]
+}
