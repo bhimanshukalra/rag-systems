@@ -1,5 +1,6 @@
 import logging
 
+import groq
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from sqlmodel import Session
 
@@ -39,7 +40,19 @@ def run_agent(question: str, *, session: Session, vector_store, settings: Settin
     ]
 
     for _step in range(settings.agent_max_steps):
-        response = llm.invoke(messages)
+        try:
+            response = llm.invoke(messages)
+        except groq.BadRequestError as exc:
+            if "tool_use_failed" not in str(exc):
+                raise
+            # The model emitted a malformed tool call (seen live: it wrote
+            # its answer text where the JSON arguments belong). That's a
+            # deterministic 400, so retrying won't help -- answer from the
+            # evidence gathered so far instead of crashing the request.
+            logger.warning(
+                "Model produced a malformed tool call; forcing a final answer: %s", exc
+            )
+            return _force_final_answer(question, messages, tools_by_name)
         messages.append(response)
 
         if not response.tool_calls:
@@ -59,15 +72,16 @@ def run_agent(question: str, *, session: Session, vector_store, settings: Settin
         settings.agent_max_steps,
         question,
     )
-    fallback_evidence = "\n\n".join(
+    return _force_final_answer(question, messages, tools_by_name)
+
+
+def _force_final_answer(question: str, messages: list, tools_by_name: dict) -> str:
+    evidence = "\n\n".join(
         str(message.content) for message in messages if isinstance(message, ToolMessage)
     )
     return str(
         tools_by_name[FINISH_TOOL_NAME].invoke(
-            {
-                "question": question,
-                "evidence": fallback_evidence or "No evidence was gathered.",
-            }
+            {"question": question, "evidence": evidence or "No evidence was gathered."}
         )
     )
 

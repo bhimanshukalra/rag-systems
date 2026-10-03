@@ -1,6 +1,15 @@
+import groq
+import httpx
+import pytest
+
 import agentic_rag.agent.loop as loop_module
 from agentic_rag.agent.loop import run_agent
 from agentic_rag.config import Settings
+
+
+def _bad_request(message: str) -> groq.BadRequestError:
+    response = httpx.Response(400, request=httpx.Request("POST", "https://example.test"))
+    return groq.BadRequestError(message, response=response, body=None)
 
 
 def _settings(**overrides) -> Settings:
@@ -27,7 +36,10 @@ class _FakeRetryable:
 
     def invoke(self, messages):
         self.invoked_messages.append(list(messages))
-        return next(self._responses)
+        item = next(self._responses)
+        if isinstance(item, Exception):
+            raise item
+        return item
 
 
 class _FakeBoundLLM:
@@ -218,3 +230,35 @@ def test_binds_the_built_tools_and_uses_configured_model(monkeypatch):
 
     assert captured["model"] == "my-model"
     assert fake_llm.last_bound.bound_tools == fake_tools
+
+
+def test_malformed_tool_call_forces_final_answer_from_gathered_evidence(monkeypatch):
+    responses = [
+        _FakeAIMessage(
+            tool_calls=[{"name": "hybrid_retrieve", "args": {"query": "q"}, "id": "1"}]
+        ),
+        _bad_request("Error code: 400 - tool_use_failed: Failed to parse tool call arguments"),
+    ]
+    fake_llm = _FakeLLM(responses)
+    monkeypatch.setattr(loop_module, "get_llm", lambda model: fake_llm)
+    fake_tools = [
+        _FakeTool("hybrid_retrieve", "retrieved evidence text"),
+        _FakeTool("generate_answer", "answer from gathered evidence"),
+    ]
+    monkeypatch.setattr(loop_module, "build_tools", lambda **kwargs: fake_tools)
+
+    result = run_agent("q", session=None, vector_store=None, settings=_settings())
+
+    assert result == "answer from gathered evidence"
+    generate_tool = fake_tools[1]
+    assert generate_tool.invoked_with[0]["question"] == "q"
+    assert "retrieved evidence text" in generate_tool.invoked_with[0]["evidence"]
+
+
+def test_other_bad_requests_are_not_swallowed(monkeypatch):
+    fake_llm = _FakeLLM([_bad_request("Error code: 400 - some unrelated invalid request")])
+    monkeypatch.setattr(loop_module, "get_llm", lambda model: fake_llm)
+    monkeypatch.setattr(loop_module, "build_tools", lambda **kwargs: [])
+
+    with pytest.raises(groq.BadRequestError):
+        run_agent("q", session=None, vector_store=None, settings=_settings())
