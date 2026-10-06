@@ -1,3 +1,4 @@
+import contextvars
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
@@ -20,6 +21,7 @@ from agentic_rag.config import Settings, get_settings
 from agentic_rag.indexing.embeddings import get_embeddings
 from agentic_rag.indexing.vector_store import get_vector_store
 from agentic_rag.ingestion.pipeline import ingest_source
+from agentic_rag.observability.tracing import get_tracer
 from agentic_rag.persistence import registry
 from agentic_rag.persistence.registry import create_engine_for
 
@@ -87,28 +89,33 @@ def query(
     session: Session = Depends(get_session),
     settings: Settings = Depends(get_settings),
 ) -> QueryResponse:
-    embeddings = get_embeddings(settings.embedding_model)
-    vector_store = get_vector_store(
-        embeddings,
-        api_key=settings.pinecone_api_key,
-        index_name=settings.pinecone_index_name,
-    )
-    future = _agent_executor.submit(
-        run_agent,
-        payload.question,
-        session=session,
-        vector_store=vector_store,
-        settings=settings,
-    )
-    try:
-        answer = future.result(timeout=settings.query_timeout_seconds)
-    except FutureTimeoutError:
-        # A running thread can't be killed; it finishes in the background,
-        # bounded by agent_max_steps. We just stop waiting for it.
-        future.cancel()
-        logger.warning("query timed out after %ss", settings.query_timeout_seconds)
-        raise HTTPException(status_code=504, detail="query timed out") from None
-    return QueryResponse(answer=answer)
+    with get_tracer().start_as_current_span("POST /query") as span:
+        span.set_attribute("question", payload.question)
+        embeddings = get_embeddings(settings.embedding_model)
+        vector_store = get_vector_store(
+            embeddings,
+            api_key=settings.pinecone_api_key,
+            index_name=settings.pinecone_index_name,
+        )
+        # Copy the context so the agent thread's spans and log lines attach to
+        # this request's trace.
+        future = _agent_executor.submit(
+            contextvars.copy_context().run,
+            run_agent,
+            payload.question,
+            session=session,
+            vector_store=vector_store,
+            settings=settings,
+        )
+        try:
+            answer = future.result(timeout=settings.query_timeout_seconds)
+        except FutureTimeoutError:
+            # A running thread can't be killed; it finishes in the background,
+            # bounded by agent_max_steps. We just stop waiting for it.
+            future.cancel()
+            logger.warning("query timed out after %ss", settings.query_timeout_seconds)
+            raise HTTPException(status_code=504, detail="query timed out") from None
+        return QueryResponse(answer=answer)
 
 
 router.include_router(protected)

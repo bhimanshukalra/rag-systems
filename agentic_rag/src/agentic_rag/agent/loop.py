@@ -8,6 +8,7 @@ from agentic_rag.agent.prompts import SYSTEM_PROMPT
 from agentic_rag.agent.tools import build_tools
 from agentic_rag.config import Settings
 from agentic_rag.generation.synthesizer import RETRY_ATTEMPTS, get_llm
+from agentic_rag.observability.tracing import get_tracer
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,12 @@ FINISH_TOOL_NAME = "generate_answer"
 
 
 def run_agent(question: str, *, session: Session, vector_store, settings: Settings) -> str:
+    with get_tracer().start_as_current_span("agent.run") as span:
+        span.set_attribute("question", question)
+        return _run_agent(question, session, vector_store, settings)
+
+
+def _run_agent(question: str, session: Session, vector_store, settings: Settings) -> str:
     """Run the ReAct tool-calling loop for one question, returning the
     final answer text.
 
@@ -39,9 +46,11 @@ def run_agent(question: str, *, session: Session, vector_store, settings: Settin
         HumanMessage(content=question),
     ]
 
-    for _step in range(settings.agent_max_steps):
+    for step in range(settings.agent_max_steps):
         try:
-            response = llm.invoke(messages)
+            with get_tracer().start_as_current_span("agent.step") as step_span:
+                step_span.set_attribute("step", step)
+                response = llm.invoke(messages)
         except groq.BadRequestError as exc:
             if "tool_use_failed" not in str(exc):
                 raise
@@ -92,7 +101,8 @@ def _invoke_tool(tools_by_name: dict, tool_call: dict) -> str:
         return f"Unknown tool: {tool_call['name']}"
 
     try:
-        return tool.invoke(tool_call["args"])
+        with get_tracer().start_as_current_span(f"tool.{tool_call['name']}"):
+            return tool.invoke(tool_call["args"])
     except Exception as exc:
         # A single tool failing shouldn't crash the whole turn -- feed the
         # error back so the agent can react (retry, rewrite, fall back).

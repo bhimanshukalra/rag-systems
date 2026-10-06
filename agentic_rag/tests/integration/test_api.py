@@ -183,3 +183,31 @@ def test_query_times_out_with_504(client, settings_override, monkeypatch):
     response = client.post("/query", json={"question": "slow"})
 
     assert response.status_code == 504
+
+
+def test_query_trace_covers_route_and_agent_thread(client, monkeypatch):
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+        InMemorySpanExporter,
+    )
+
+    import agentic_rag.observability.tracing as tracing_module
+    from agentic_rag.observability.tracing import configure_tracing, get_tracer
+
+    exporter = InMemorySpanExporter()
+    configure_tracing(exporter)
+
+    def fake_run_agent(question, *, session, vector_store, settings):
+        with get_tracer().start_as_current_span("agent.run"):
+            return "42"
+
+    monkeypatch.setattr(routes_module, "get_embeddings", lambda _model: _FakeEmbeddings())
+    monkeypatch.setattr(routes_module, "get_vector_store", lambda *a, **k: "vector-store")
+    monkeypatch.setattr(routes_module, "run_agent", fake_run_agent)
+    try:
+        client.post("/query", json={"question": "q"})
+        spans = {s.name: s for s in exporter.get_finished_spans()}
+    finally:
+        tracing_module._provider = None
+
+    assert spans["agent.run"].context.trace_id == spans["POST /query"].context.trace_id
+    assert spans["agent.run"].parent.span_id == spans["POST /query"].context.span_id
