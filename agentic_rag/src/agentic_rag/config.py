@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     pinecone_index_name: str = "agentic-rag-kb"
     database_path: str = "./data/registry.db"
     request_timeout_seconds: int = 15
+    query_timeout_seconds: int = 60
+    rate_limit_requests_per_minute: int = 30
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = 1000
     chunk_overlap: int = 150

@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 import agentic_rag.api.routes as routes_module
 import agentic_rag.ingestion.pipeline as pipeline_module
 from agentic_rag.api.app import app
+from agentic_rag.api.rate_limit import _limiter_for
 from agentic_rag.api.routes import _get_engine
 from agentic_rag.config import Settings, get_settings
 
@@ -36,9 +37,11 @@ def settings_override(tmp_path):
     )
     app.dependency_overrides[get_settings] = lambda: settings
     _get_engine.cache_clear()
+    _limiter_for.cache_clear()
     yield settings
     app.dependency_overrides.clear()
     _get_engine.cache_clear()
+    _limiter_for.cache_clear()
 
 
 @pytest.fixture
@@ -142,3 +145,41 @@ def test_protected_routes_reject_missing_or_wrong_token(settings_override, metho
 def test_healthz_does_not_require_auth(settings_override):
     with TestClient(app) as unauthenticated:
         assert unauthenticated.get("/healthz").status_code == 200
+
+
+def test_rate_limit_burst_returns_429(settings_override, client):
+    limit = settings_override.rate_limit_requests_per_minute
+    statuses = [client.get("/sources/9999").status_code for _ in range(limit + 3)]
+
+    assert statuses[:limit] == [404] * limit
+    assert statuses[limit:] == [429] * 3
+    assert int(client.get("/sources/9999").headers["Retry-After"]) >= 1
+
+
+def test_unauthenticated_requests_do_not_consume_rate_limit(settings_override):
+    limit = settings_override.rate_limit_requests_per_minute
+    with TestClient(app) as unauthenticated:
+        for _ in range(limit + 2):
+            assert unauthenticated.get("/sources/1").status_code == 401
+    with TestClient(app, headers=AUTH_HEADERS) as authed:
+        assert authed.get("/sources/9999").status_code == 404
+
+
+def test_healthz_is_not_rate_limited(settings_override, client):
+    limit = settings_override.rate_limit_requests_per_minute
+    assert all(client.get("/healthz").status_code == 200 for _ in range(limit + 3))
+
+
+def test_query_times_out_with_504(client, settings_override, monkeypatch):
+    import time
+
+    settings_override.query_timeout_seconds = 0.2
+    monkeypatch.setattr(routes_module, "get_embeddings", lambda _model: _FakeEmbeddings())
+    monkeypatch.setattr(routes_module, "get_vector_store", lambda *a, **k: "vector-store")
+    monkeypatch.setattr(
+        routes_module, "run_agent", lambda *a, **k: time.sleep(1) or "late"
+    )
+
+    response = client.post("/query", json={"question": "slow"})
+
+    assert response.status_code == 504

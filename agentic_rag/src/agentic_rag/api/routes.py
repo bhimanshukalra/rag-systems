@@ -1,4 +1,6 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,6 +8,7 @@ from sqlmodel import Session
 
 from agentic_rag.agent.loop import run_agent
 from agentic_rag.api.auth import require_auth
+from agentic_rag.api.rate_limit import enforce_rate_limit
 from agentic_rag.api.schemas import (
     HealthResponse,
     IngestSourceRequest,
@@ -23,7 +26,11 @@ from agentic_rag.persistence.registry import create_engine_for
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-protected = APIRouter(dependencies=[Depends(require_auth)])
+protected = APIRouter(dependencies=[Depends(require_auth), Depends(enforce_rate_limit)])
+
+
+# Agent runs execute here so /query can enforce a wall-clock timeout.
+_agent_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="agent")
 
 
 @lru_cache(maxsize=8)
@@ -86,9 +93,21 @@ def query(
         api_key=settings.pinecone_api_key,
         index_name=settings.pinecone_index_name,
     )
-    answer = run_agent(
-        payload.question, session=session, vector_store=vector_store, settings=settings
+    future = _agent_executor.submit(
+        run_agent,
+        payload.question,
+        session=session,
+        vector_store=vector_store,
+        settings=settings,
     )
+    try:
+        answer = future.result(timeout=settings.query_timeout_seconds)
+    except FutureTimeoutError:
+        # A running thread can't be killed; it finishes in the background,
+        # bounded by agent_max_steps. We just stop waiting for it.
+        future.cancel()
+        logger.warning("query timed out after %ss", settings.query_timeout_seconds)
+        raise HTTPException(status_code=504, detail="query timed out") from None
     return QueryResponse(answer=answer)
 
 
