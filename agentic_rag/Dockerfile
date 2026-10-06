@@ -14,8 +14,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 
 FROM python:3.12-slim
+# Both volume mount points are created and chowned here: a named volume copies
+# the image directory's ownership on first use, and is otherwise root-owned
+# (unwritable by the non-root user).
 RUN useradd --create-home --uid 1000 app \
-    && mkdir -p /app/data && chown -R app:app /app
+    && mkdir -p /app/data /home/app/.cache/huggingface \
+    && chown -R app:app /app /home/app/.cache
 WORKDIR /app
 COPY --from=builder --chown=app:app /app/.venv ./.venv
 ENV PATH="/app/.venv/bin:$PATH" \
