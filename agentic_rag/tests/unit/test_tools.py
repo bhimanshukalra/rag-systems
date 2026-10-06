@@ -12,6 +12,7 @@ def _settings(**overrides) -> Settings:
     defaults = {
         "groq_api_key": "fake-groq",
         "pinecone_api_key": "fake-pinecone",
+        "api_auth_token": "fake-token",
         "llm_model": "fake-llm",
         "tavily_api_key": "fake-tavily",
     }

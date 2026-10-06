@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from agentic_rag.agent.loop import run_agent
+from agentic_rag.api.auth import require_auth
 from agentic_rag.api.schemas import (
     HealthResponse,
     IngestSourceRequest,
@@ -22,6 +23,7 @@ from agentic_rag.persistence.registry import create_engine_for
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+protected = APIRouter(dependencies=[Depends(require_auth)])
 
 
 @lru_cache(maxsize=8)
@@ -40,7 +42,7 @@ def healthz() -> HealthResponse:
     return HealthResponse()
 
 
-@router.post("/sources", response_model=SourceResponse, status_code=201)
+@protected.post("/sources", response_model=SourceResponse, status_code=201)
 def create_source(
     payload: IngestSourceRequest,
     session: Session = Depends(get_session),
@@ -62,7 +64,7 @@ def create_source(
     return SourceResponse.model_validate(record)
 
 
-@router.get("/sources/{source_id}", response_model=SourceResponse)
+@protected.get("/sources/{source_id}", response_model=SourceResponse)
 def get_source_status(
     source_id: int, session: Session = Depends(get_session)
 ) -> SourceResponse:
@@ -72,7 +74,7 @@ def get_source_status(
     return SourceResponse.model_validate(record)
 
 
-@router.post("/query", response_model=QueryResponse)
+@protected.post("/query", response_model=QueryResponse)
 def query(
     payload: QueryRequest,
     session: Session = Depends(get_session),
@@ -88,3 +90,6 @@ def query(
         payload.question, session=session, vector_store=vector_store, settings=settings
     )
     return QueryResponse(answer=answer)
+
+
+router.include_router(protected)

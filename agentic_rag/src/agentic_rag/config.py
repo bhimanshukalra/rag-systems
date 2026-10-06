@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     groq_api_key: str
     pinecone_api_key: str
+    api_auth_token: str
     pinecone_index_name: str = "agentic-rag-kb"
     database_path: str = "./data/registry.db"
     request_timeout_seconds: int = 15

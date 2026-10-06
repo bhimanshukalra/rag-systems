@@ -9,6 +9,8 @@ from agentic_rag.api.app import app
 from agentic_rag.api.routes import _get_engine
 from agentic_rag.config import Settings, get_settings
 
+AUTH_TOKEN = "test-token"
+AUTH_HEADERS = {"Authorization": f"Bearer {AUTH_TOKEN}"}
 FIXTURE_PATH = Path(__file__).parent.parent / "fixtures" / "sample.md"
 
 
@@ -22,6 +24,7 @@ def settings_override(tmp_path):
     settings = Settings(
         groq_api_key="fake-groq",
         pinecone_api_key="fake-pinecone",
+        api_auth_token=AUTH_TOKEN,
         pinecone_index_name="fake-index",
         database_path=str(tmp_path / "test.db"),
         request_timeout_seconds=5,
@@ -40,7 +43,7 @@ def settings_override(tmp_path):
 
 @pytest.fixture
 def client(settings_override):
-    with TestClient(app) as test_client:
+    with TestClient(app, headers=AUTH_HEADERS) as test_client:
         yield test_client
 
 
@@ -113,3 +116,29 @@ def test_query_returns_agent_answer(client, monkeypatch):
     assert response.status_code == 200
     assert response.json() == {"answer": "42", "sources": []}
     assert captured == {"question": "what is the answer?", "vector_store": "vector-store"}
+
+
+@pytest.mark.parametrize(
+    "method, path, body",
+    [
+        ("post", "/sources", {"source_type": "markdown", "location": "x"}),
+        ("get", "/sources/1", None),
+        ("post", "/query", {"question": "q"}),
+    ],
+)
+def test_protected_routes_reject_missing_or_wrong_token(settings_override, method, path, body):
+    with TestClient(app) as unauthenticated:
+        missing = getattr(unauthenticated, method)(path, **({"json": body} if body else {}))
+        wrong = getattr(unauthenticated, method)(
+            path,
+            headers={"Authorization": "Bearer wrong"},
+            **({"json": body} if body else {}),
+        )
+
+    assert missing.status_code == 401
+    assert wrong.status_code == 401
+
+
+def test_healthz_does_not_require_auth(settings_override):
+    with TestClient(app) as unauthenticated:
+        assert unauthenticated.get("/healthz").status_code == 200

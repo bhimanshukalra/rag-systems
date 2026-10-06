@@ -9,6 +9,7 @@ def _settings(**overrides) -> Settings:
     defaults = {
         "groq_api_key": "fake-groq",
         "pinecone_api_key": "fake-pinecone",
+        "api_auth_token": "fake-token",
         "retrieval_k": 3,
         "hybrid_retrieval_enabled": False,
         "reranking_enabled": False,
