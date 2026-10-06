@@ -1,0 +1,10 @@
+.venv
+.env
+.git
+__pycache__
+*.py[oc]
+.pytest_cache
+.ruff_cache
+data
+planning
+tests

@@ -1,0 +1,19 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    # Secrets come from .env at runtime; they are never baked into the image.
+    env_file: .env
+    environment:
+      # Overrides any DATABASE_PATH in .env so the registry lands on the volume.
+      DATABASE_PATH: /app/data/registry.db
+    volumes:
+      - registry-data:/app/data
+      # Keeps the downloaded embedding/reranker models across rebuilds.
+      - hf-cache:/home/app/.cache/huggingface
+    restart: unless-stopped
+
+volumes:
+  registry-data:
+  hf-cache:
