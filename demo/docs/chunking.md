@@ -2,6 +2,16 @@
 
 Each chunk is embedded in isolation. The model only sees fragments and not the complete concept, so ensuring that embedding captures complete meaning is essential.
 
+Below-mentioned variables affect chunking quality.
+
+1. Chunk size: the sweet spot is between 200 and 1,000 tokens. Too large, and it dilutes the meaning. Too small, and it loses context.
+2. Overlap: A good overlap is between 10% and 20%, which preserves context.
+3. Split boundaries:
+   - Fixed means random cuts.
+   - Recursive is cutting at the end of paragraphs or sentences.
+   - Semantic is ensuring that we are cutting at meaning boundary.
+4. Content type: depending on whether the documents are code, legal documents or markdown different treatment is required.
+
 ## Fixed size chunking
 
 cut at exact intervals e.g. every 500 chars
