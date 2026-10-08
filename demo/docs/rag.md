@@ -12,3 +12,11 @@ Three rules for production RAG:
 1. Same embedding model everywhere
 2. Embedding quality over quantity
 3. Test retrieval separately
+
+Common reasons for RAG not working as expected:
+
+1. Bad chunking
+2. Embedding mismatch
+3. Retrieval noise
+4. Context overflow
+5. Hallucination
