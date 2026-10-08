@@ -45,3 +45,10 @@ Hybrid is best of both
 4. Latency critical (adds ~20-50ms)
 
 In production with real users - add hybrid search (the accuracy boost is worth it)
+
+## Prod considerations for hybrid search
+
+1. BM25 Rebuild - doesn't support incremental updates. It needs to be rebuilt when adding documents
+2. Tune weights - start with 50/50. Adjust based on query patterns. Monitor which retriever contributes.
+3. K value - Retrieve more, let RRF sort. k=4 or higher recommended
+4. Latency - Hybrid add ~20-50 ms. Two searches instead of one. Worth it for accuracy.

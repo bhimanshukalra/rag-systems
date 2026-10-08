@@ -1,5 +1,6 @@
 from langchain_chroma import Chroma
-from langchain_community.retrievers import BM25Retriever,
+from langchain_classic.retrievers import EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 
 from llm_helper import embeddings_model
@@ -44,12 +45,19 @@ vector_store = Chroma.from_documents(
     documents, embedding=embeddings_model, collection_name="hybrid_test"
 )
 
-vector_retriever = vector_store.as_retriever(kwargs={"k": 3})
+vector_retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
 print("Vector retriever ready")
 
-bm25_retriver = BM25Retriever.from_documents(documents, k=3)
+bm25_retriever = BM25Retriever.from_documents(documents, k=3)
 
 print("BM25 retriever ready")
 
-ensemble_retriever = EnsembleRetriever()
+ensemble_retriever = EnsembleRetriever(
+    retrievers=[bm25_retriever, vector_retriever], weights=[0.5, 0.5]
+)
+
+print("hybrid retriever ready")
+
+for doc in ensemble_retriever.invoke("What is RAG?"):
+    print(doc.metadata["source"], "-", doc.page_content)
