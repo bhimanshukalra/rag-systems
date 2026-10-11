@@ -1,4 +1,6 @@
-Hierarchical Navigable Small World
+# Hierarchical Navigable Small World
+
+Hierarchical Navigable Small World (HNSW) is a graph-based indexing algorithm used for fast approximate nearest neighbor (ANN) search in high-dimensional vector spaces.
 
 Primary parameters:
 
