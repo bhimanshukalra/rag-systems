@@ -62,3 +62,24 @@ In traditional chunking, chunk 5 has no idea what chunks 1 to 4 contain. In lead
 - If none of the above is true, then we go with recursive.
 
 It's the 80/20 rule: the recursive will take you 80% of the way. The last 20% would be semantic.
+
+# Contextual chunking
+
+Contextual chunking (often tied to Contextual Retrieval or Contextual Embeddings) is a data preprocessing technique for Retrieval-Augmented Generation (RAG) systems that attaches a short, LLM-generated description or prefix to each document chunk before it is embedded and indexed.
+
+# Late chunking vs early chunking
+
+Early chunking (traditional chunking) splits text into smaller pieces before generating embeddings, whereas late chunking passes the entire document through a long-context embedding model first and chunks the token-level embeddings afterward.
+
+Comparison Breakdown
+
+Feature | Early Chunking (Traditional) | Late Chunking
+Order of Operations | Split raw text into chunks → Embed each chunk independently. | Embed the full document first (using a long-context model) → Split token embeddings and pool.
+
+Context Awareness | Low to moderate. Chunks lose global document context and reference links across boundaries. | High. Every chunk vector carries full-document and neighboring token semantics.
+
+Compute & Latency | Low latency, fast ingestion, and minimal compute overhead. | Higher latency and compute intensity due to full-document transformer passes.
+
+Model Requirements | Works with standard, short-context embedding models. | Requires a long-context embedding model (e.g., supporting 8K+ tokens like Jina Embeddings v2).
+
+Best Used For | Static knowledge bases, simple text structures, strict low-latency SLAs, and tight budgets. | Complex legal/medical texts, cross-chunk reference heavy documents, and high-accuracy RAG.
